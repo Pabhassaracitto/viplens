@@ -22,10 +22,19 @@ class MindMapScreen extends StatefulWidget {
 class _MindMapScreenState extends State<MindMapScreen> {
   bool _isZenMode = false;
   bool _showList = false;
+  bool _isInitialized = false;
 
   @override
-  void initState() {
-    super.initState();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isInitialized) {
+      _isInitialized = true;
+      _loadData();
+    }
+  }
+
+  void _loadData() {
+    // Đảm bảo load sau frame hiện tại
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<MindMapProvider>().loadMindMap(widget.mindmapId);
@@ -53,7 +62,6 @@ class _MindMapScreenState extends State<MindMapScreen> {
               : AppBar(
                   title: Text(mindmap.title),
                   actions: [
-                    // Toggle view
                     IconButton(
                       icon: Icon(_showList ? Icons.account_tree : Icons.list),
                       onPressed: () {
@@ -63,7 +71,6 @@ class _MindMapScreenState extends State<MindMapScreen> {
                       },
                       tooltip: _showList ? 'Xem sơ đồ' : 'Xem danh sách',
                     ),
-                    // Zen mode
                     IconButton(
                       icon: const Icon(Icons.self_improvement),
                       onPressed: () {
@@ -73,7 +80,6 @@ class _MindMapScreenState extends State<MindMapScreen> {
                       },
                       tooltip: 'Chế độ thiền định',
                     ),
-                    // More options
                     PopupMenuButton<String>(
                       onSelected: (value) => _handleMenuAction(value, provider),
                       itemBuilder: (context) => [
@@ -107,7 +113,6 @@ class _MindMapScreenState extends State<MindMapScreen> {
                 ),
           body: Stack(
             children: [
-              // Main content
               _showList
                   ? _buildListView(mindmap, provider)
                   : MindMapCanvas(
@@ -124,8 +129,6 @@ class _MindMapScreenState extends State<MindMapScreen> {
                         _showNodeOptions(nodeId, provider);
                       },
                     ),
-
-              // Zen mode exit button
               if (_isZenMode)
                 Positioned(
                   bottom: 32,
@@ -142,13 +145,9 @@ class _MindMapScreenState extends State<MindMapScreen> {
                 ),
             ],
           ),
-
-          // Bottom action bar (when node selected)
           bottomNavigationBar: provider.selectedNode != null && !_isZenMode
               ? _buildBottomBar(provider)
               : null,
-
-          // FAB for adding nodes
           floatingActionButton: !_isZenMode && !_showList
               ? FloatingActionButton(
                   onPressed: () => _addChildNode(provider),
@@ -161,7 +160,6 @@ class _MindMapScreenState extends State<MindMapScreen> {
   }
 
   Widget _buildListView(mindmap, MindMapProvider provider) {
-    // Flatten nodes for list view
     List<NodeModel> flatNodes = [];
 
     void addNode(String nodeId) {
@@ -289,14 +287,24 @@ class _MindMapScreenState extends State<MindMapScreen> {
 
     if (parentId == null) return;
 
+    // Tạm dừng frame render để tránh xung đột bàn phím
     final result = await Helpers.showInputDialog(
       context,
       title: 'Thêm nội dung mới',
       hintText: 'Nhập nội dung...',
     );
 
+    // Kiểm tra mounted lần 1
+    if (!mounted) return;
+
     if (result != null && result.isNotEmpty) {
-      await provider.addChildNode(parentId, result);
+      // Chờ bàn phím ẩn xong (quan trọng)
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      // Kiểm tra mounted lần 2 trước khi gọi provider
+      if (mounted) {
+        await provider.addChildNode(parentId, result);
+      }
     }
   }
 
@@ -311,8 +319,14 @@ class _MindMapScreenState extends State<MindMapScreen> {
       hintText: 'Nhập nội dung...',
     );
 
+    if (!mounted) return;
+
     if (result != null && result.isNotEmpty) {
-      await provider.updateNodeContent(nodeId, result);
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      if (mounted) {
+        await provider.updateNodeContent(nodeId, result);
+      }
     }
   }
 
@@ -325,7 +339,7 @@ class _MindMapScreenState extends State<MindMapScreen> {
       isDestructive: true,
     );
 
-    if (confirmed) {
+    if (confirmed && mounted) {
       await provider.deleteNode(nodeId);
     }
   }
@@ -341,7 +355,7 @@ class _MindMapScreenState extends State<MindMapScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => SafeArea(
+      builder: (sheetContext) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -349,7 +363,7 @@ class _MindMapScreenState extends State<MindMapScreen> {
               leading: const Icon(Icons.edit),
               title: const Text('Chỉnh sửa'),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(sheetContext);
                 _editNode(nodeId, provider);
               },
             ),
@@ -357,7 +371,7 @@ class _MindMapScreenState extends State<MindMapScreen> {
               leading: const Icon(Icons.add),
               title: const Text('Thêm nội dung con'),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(sheetContext);
                 _addChildNode(provider);
               },
             ),
@@ -368,7 +382,7 @@ class _MindMapScreenState extends State<MindMapScreen> {
               ),
               title: Text(node.isFlashcard ? 'Bỏ flashcard' : 'Tạo flashcard'),
               onTap: () {
-                Navigator.pop(context);
+                Navigator.pop(sheetContext);
                 provider.toggleFlashcard(nodeId);
               },
             ),
@@ -383,7 +397,7 @@ class _MindMapScreenState extends State<MindMapScreen> {
                   style: TextStyle(color: AppColors.error),
                 ),
                 onTap: () {
-                  Navigator.pop(context);
+                  Navigator.pop(sheetContext);
                   _deleteNode(nodeId, provider);
                 },
               ),
@@ -395,7 +409,6 @@ class _MindMapScreenState extends State<MindMapScreen> {
   }
 
   void _exportMindmap(MindMapProvider provider) {
-    // TODO: Implement export
     Helpers.showSnackBar(context, 'Tính năng đang phát triển');
   }
 }

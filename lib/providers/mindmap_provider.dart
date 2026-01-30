@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-
+import 'package:flutter/material.dart'; // Cần import này cho WidgetsBinding
 import '../models/mindmap_model.dart';
 import '../models/node_model.dart';
 import '../services/database_service.dart';
@@ -11,7 +11,6 @@ class MindMapProvider extends ChangeNotifier {
   String? _selectedNodeId;
   bool _isLoading = false;
   String _searchQuery = '';
-  bool _disposed = false;
 
   // Getters
   List<MindMapModel> get mindmaps => _searchQuery.isEmpty
@@ -30,10 +29,17 @@ class MindMapProvider extends ChangeNotifier {
 
   int get totalDueFlashcards => DatabaseService.getTotalDueFlashcardCount();
 
+  // === FIX: Hàm notify an toàn ===
+  void _safeNotify() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyListeners();
+    });
+  }
+
   /// Load tất cả mindmaps từ database
   Future<void> loadMindMaps() async {
     _isLoading = true;
-    if (!_disposed) notifyListeners();
+    notifyListeners();
 
     try {
       _mindmaps = DatabaseService.getAllMindMaps();
@@ -41,7 +47,7 @@ class MindMapProvider extends ChangeNotifier {
       debugPrint('Error loading mindmaps: $e');
     } finally {
       _isLoading = false;
-      if (!_disposed) notifyListeners();
+      notifyListeners();
     }
   }
 
@@ -70,7 +76,6 @@ class MindMapProvider extends ChangeNotifier {
     String title,
     List<String> items,
   ) async {
-    // Tạo text từ template
     final text = items.map((item) => '- $item').join('\n');
     return createMindMapFromText(text, title);
   }
@@ -89,10 +94,12 @@ class MindMapProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Chọn node
+  /// Chọn node (Đã áp dụng FIX)
   void selectNode(String? nodeId) {
-    _selectedNodeId = nodeId;
-    notifyListeners();
+    if (_selectedNodeId != nodeId) {
+      _selectedNodeId = nodeId;
+      _safeNotify(); // Dùng hàm notify an toàn
+    }
   }
 
   /// Thêm node con
@@ -111,7 +118,7 @@ class MindMapProvider extends ChangeNotifier {
     );
 
     await DatabaseService.saveMindMap(_currentMindMap!);
-    if (!_disposed) notifyListeners();
+    notifyListeners();
   }
 
   /// Cập nhật nội dung node
@@ -130,24 +137,125 @@ class MindMapProvider extends ChangeNotifier {
     );
 
     await DatabaseService.saveMindMap(_currentMindMap!);
-    if (!_disposed) notifyListeners();
+    notifyListeners();
+  }
+
+  /// Cập nhật ghi chú node
+  Future<void> updateNodeNote(String nodeId, String note, String? pali) async {
+    if (_currentMindMap == null) return;
+
+    final nodeIndex = _currentMindMap!.nodes.indexWhere((n) => n.id == nodeId);
+    if (nodeIndex < 0) return;
+
+    final updatedNode = _currentMindMap!.nodes[nodeIndex].copyWith(
+      note: note.isEmpty ? null : note,
+      paliText: pali,
+      updatedAt: DateTime.now(),
+    );
+
+    final updatedNodes = List<NodeModel>.from(_currentMindMap!.nodes);
+    updatedNodes[nodeIndex] = updatedNode;
+
+    _currentMindMap = _currentMindMap!.copyWith(
+      nodes: updatedNodes,
+      updatedAt: DateTime.now(),
+    );
+
+    await DatabaseService.saveMindMap(_currentMindMap!);
+    notifyListeners();
+  }
+
+  /// Cập nhật hình ảnh node
+  Future<void> updateNodeImage(String nodeId, String? imagePath) async {
+    if (_currentMindMap == null) return;
+
+    final nodeIndex = _currentMindMap!.nodes.indexWhere((n) => n.id == nodeId);
+    if (nodeIndex < 0) return;
+
+    final updatedNode = _currentMindMap!.nodes[nodeIndex].copyWith(
+      imagePath: imagePath,
+      updatedAt: DateTime.now(),
+    );
+
+    final updatedNodes = List<NodeModel>.from(_currentMindMap!.nodes);
+    updatedNodes[nodeIndex] = updatedNode;
+
+    _currentMindMap = _currentMindMap!.copyWith(
+      nodes: updatedNodes,
+      updatedAt: DateTime.now(),
+    );
+
+    await DatabaseService.saveMindMap(_currentMindMap!);
+    notifyListeners();
+  }
+
+  /// Cập nhật audio node
+  Future<void> updateNodeAudio(
+    String nodeId,
+    String? audioPath,
+    int? durationMs,
+  ) async {
+    if (_currentMindMap == null) return;
+
+    final nodeIndex = _currentMindMap!.nodes.indexWhere((n) => n.id == nodeId);
+    if (nodeIndex < 0) return;
+
+    final updatedNode = _currentMindMap!.nodes[nodeIndex].copyWith(
+      audioPath: audioPath,
+      audioDuration: durationMs,
+      updatedAt: DateTime.now(),
+    );
+
+    final updatedNodes = List<NodeModel>.from(_currentMindMap!.nodes);
+    updatedNodes[nodeIndex] = updatedNode;
+
+    _currentMindMap = _currentMindMap!.copyWith(
+      nodes: updatedNodes,
+      updatedAt: DateTime.now(),
+    );
+
+    await DatabaseService.saveMindMap(_currentMindMap!);
+    notifyListeners();
+  }
+
+  /// Cập nhật link node
+  Future<void> updateNodeLink(String nodeId, String? link) async {
+    if (_currentMindMap == null) return;
+
+    final nodeIndex = _currentMindMap!.nodes.indexWhere((n) => n.id == nodeId);
+    if (nodeIndex < 0) return;
+
+    final updatedNode = _currentMindMap!.nodes[nodeIndex].copyWith(
+      link: link,
+      updatedAt: DateTime.now(),
+    );
+
+    final updatedNodes = List<NodeModel>.from(_currentMindMap!.nodes);
+    updatedNodes[nodeIndex] = updatedNode;
+
+    _currentMindMap = _currentMindMap!.copyWith(
+      nodes: updatedNodes,
+      updatedAt: DateTime.now(),
+    );
+
+    await DatabaseService.saveMindMap(_currentMindMap!);
+    notifyListeners();
   }
 
   /// Xóa node
   Future<void> deleteNode(String nodeId) async {
     if (_currentMindMap == null) return;
-    if (nodeId == _currentMindMap!.rootNodeId) return; // Không xóa root
+    if (nodeId == _currentMindMap!.rootNodeId) return;
 
     _currentMindMap = TextParserService.deleteNode(_currentMindMap!, nodeId);
 
-    // Nếu đang chọn node bị xóa, chuyển về root
     if (_selectedNodeId == nodeId) {
       _selectedNodeId = _currentMindMap!.rootNodeId;
     }
 
     await DatabaseService.saveMindMap(_currentMindMap!);
-    await loadMindMaps(); // Refresh list
-    if (!_disposed) notifyListeners();
+    await loadMindMaps();
+    notifyListeners();
   }
 
   /// Toggle flashcard
@@ -159,7 +267,7 @@ class MindMapProvider extends ChangeNotifier {
       nodeId,
     );
     await DatabaseService.saveMindMap(_currentMindMap!);
-    if (!_disposed) notifyListeners();
+    notifyListeners();
   }
 
   /// Cập nhật title mindmap
@@ -171,7 +279,6 @@ class MindMapProvider extends ChangeNotifier {
       updatedAt: DateTime.now(),
     );
 
-    // Cập nhật cả root node
     final rootIndex = _currentMindMap!.nodes.indexWhere(
       (n) => n.id == _currentMindMap!.rootNodeId,
     );
@@ -185,7 +292,7 @@ class MindMapProvider extends ChangeNotifier {
 
     await DatabaseService.saveMindMap(_currentMindMap!);
     await loadMindMaps();
-    if (!_disposed) notifyListeners();
+    notifyListeners();
   }
 
   /// Xóa mindmap
@@ -198,7 +305,7 @@ class MindMapProvider extends ChangeNotifier {
     }
 
     await loadMindMaps();
-    if (!_disposed) notifyListeners();
+    notifyListeners();
   }
 
   /// Lưu mindmap hiện tại
@@ -213,11 +320,5 @@ class MindMapProvider extends ChangeNotifier {
     if (_currentMindMap != null) {
       loadMindMap(_currentMindMap!.id);
     }
-  }
-
-  @override
-  void dispose() {
-    _disposed = true;
-    super.dispose();
   }
 }

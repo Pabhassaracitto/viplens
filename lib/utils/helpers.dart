@@ -132,7 +132,7 @@ class Helpers {
       ),
     );
 
-    controller.dispose();
+    //controller.dispose();
     return result;
   }
 

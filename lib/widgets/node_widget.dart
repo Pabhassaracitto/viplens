@@ -26,15 +26,51 @@ class NodeWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = AppColors.getNodeColor(node.colorIndex);
+    final nodeColor = AppColors.getNodeColor(node.colorIndex);
     final hasPali = node.paliText != null && node.paliText!.isNotEmpty;
+
+    // === XÁC ĐỊNH MÀU SẮC ===
+
+    // Màu nền
+    Color backgroundColor;
+    if (isZenMode) {
+      backgroundColor = isSelected ? AppColors.zenAccent : AppColors.zenSurface;
+    } else if (isSelected) {
+      backgroundColor = nodeColor;
+    } else {
+      // Nền nhạt khi không được chọn
+      backgroundColor = nodeColor.withOpacity(0.15);
+    }
+
+    // Màu chữ chính (tiếng Việt)
+    Color textColor;
+    if (isZenMode) {
+      textColor = AppColors.zenText;
+    } else if (isSelected) {
+      textColor = Colors.white;
+    } else {
+      // ĐÂY LÀ FIX CHÍNH: Dùng màu tối để dễ đọc trên nền nhạt
+      textColor = Colors.grey[850] ?? const Color(0xFF212121);
+    }
+
+    // Màu chữ Pali
+    Color paliColor;
+    if (isZenMode) {
+      paliColor = AppColors.zenText.withOpacity(0.7);
+    } else if (isSelected) {
+      paliColor = Colors.white.withOpacity(0.85);
+    } else {
+      paliColor = nodeColor.withOpacity(0.8);
+    }
+
+    // Màu viền
+    Color borderColor = isSelected ? nodeColor : nodeColor.withOpacity(0.4);
 
     return GestureDetector(
       onTap: onTap,
       onDoubleTap: onDoubleTap,
       onLongPress: onLongPress,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+      child: Container(
         constraints: BoxConstraints(
           minWidth: isRoot ? 100 : 60,
           maxWidth: isZenMode ? 250 : 180,
@@ -44,23 +80,24 @@ class NodeWidget extends StatelessWidget {
           vertical: isRoot ? 14 : 10,
         ),
         decoration: BoxDecoration(
-          color: isZenMode
-              ? AppColors.zenSurface
-              : (isSelected ? color : color.withOpacity(0.12)),
+          color: backgroundColor,
           borderRadius: BorderRadius.circular(isRoot ? 16 : 12),
-          border: Border.all(
-            color: isSelected ? color : color.withOpacity(0.3),
-            width: isSelected ? 2.5 : 1.5,
-          ),
+          border: Border.all(color: borderColor, width: isSelected ? 2.5 : 1.5),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.3),
+                    color: nodeColor.withOpacity(0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
                 ]
-              : null,
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -72,28 +109,31 @@ class NodeWidget extends StatelessWidget {
                 style: TextStyle(
                   fontSize: isRoot ? 13 : 11,
                   fontStyle: FontStyle.italic,
-                  color: isSelected
-                      ? Colors.white.withOpacity(0.8)
-                      : (isZenMode
-                            ? AppColors.zenText.withOpacity(0.7)
-                            : color.withOpacity(0.7)),
+                  color: paliColor,
                 ),
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 4),
             ],
 
-            // Main content
+            // Main content (tiếng Việt)
             Text(
               node.content,
               style: TextStyle(
                 fontSize: isRoot ? 16 : 14,
                 fontWeight: isRoot ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected
-                    ? Colors.white
-                    : (isZenMode ? AppColors.zenText : AppColors.textPrimary),
+                color: textColor,
+                // Thêm shadow nhẹ để chữ nổi bật hơn
+                shadows: isSelected
+                    ? null
+                    : [
+                        Shadow(
+                          color: Colors.white.withOpacity(0.5),
+                          blurRadius: 1,
+                        ),
+                      ],
               ),
               textAlign: TextAlign.center,
               maxLines: isZenMode ? 4 : 3,
@@ -102,12 +142,12 @@ class NodeWidget extends StatelessWidget {
 
             // Flashcard indicator
             if (node.isFlashcard) ...[
-              const SizedBox(height: 4),
+              const SizedBox(height: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.white.withOpacity(0.2)
+                      ? Colors.white.withOpacity(0.25)
                       : AppColors.accent.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -119,11 +159,12 @@ class NodeWidget extends StatelessWidget {
                       size: 10,
                       color: isSelected ? Colors.white : AppColors.accent,
                     ),
-                    const SizedBox(width: 2),
+                    const SizedBox(width: 3),
                     Text(
                       'Thẻ',
                       style: TextStyle(
                         fontSize: 9,
+                        fontWeight: FontWeight.w500,
                         color: isSelected ? Colors.white : AppColors.accent,
                       ),
                     ),
@@ -178,14 +219,16 @@ class NodeListTile extends StatelessWidget {
             node.content,
             style: TextStyle(
               fontWeight: node.level == 0 ? FontWeight.w600 : FontWeight.normal,
+              color: Colors.grey[850],
             ),
           ),
           subtitle: hasPali
               ? Text(
                   node.paliText!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontStyle: FontStyle.italic,
                     fontSize: 12,
+                    color: color.withOpacity(0.8),
                   ),
                 )
               : null,

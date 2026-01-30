@@ -28,7 +28,6 @@ class NodeModel extends HiveObject {
   @HiveField(7)
   int colorIndex;
 
-  // Flashcard data
   @HiveField(8)
   bool isFlashcard;
 
@@ -44,12 +43,37 @@ class NodeModel extends HiveObject {
   @HiveField(12)
   int intervalDays;
 
-  // Position for mindmap canvas
   @HiveField(13)
   double? positionX;
 
   @HiveField(14)
   double? positionY;
+
+  // --- CÁC TRƯỜNG MỚI (GIAI ĐOẠN 3) ---
+
+  @HiveField(15)
+  String? imagePath;
+
+  @HiveField(16)
+  String? audioPath;
+
+  @HiveField(17)
+  int? audioDuration;
+
+  @HiveField(18)
+  String? imageUrl;
+
+  @HiveField(19)
+  String? link;
+
+  @HiveField(20)
+  DateTime? createdAt;
+
+  @HiveField(21)
+  DateTime? updatedAt;
+
+  @HiveField(22)
+  String? richNote;
 
   NodeModel({
     required this.id,
@@ -67,9 +91,24 @@ class NodeModel extends HiveObject {
     this.intervalDays = 1,
     this.positionX,
     this.positionY,
+    // Tham số mới
+    this.imagePath,
+    this.audioPath,
+    this.audioDuration,
+    this.imageUrl,
+    this.link,
+    this.createdAt,
+    this.updatedAt,
+    this.richNote,
   }) : childIds = childIds ?? [];
 
-  // Copy with method
+  // Getters tiện ích
+  bool get hasImage => imagePath != null || imageUrl != null;
+  bool get hasAudio => audioPath != null;
+  bool get hasNote =>
+      (note != null && note!.isNotEmpty) ||
+      (richNote != null && richNote!.isNotEmpty);
+
   NodeModel copyWith({
     String? id,
     String? content,
@@ -86,6 +125,15 @@ class NodeModel extends HiveObject {
     int? intervalDays,
     double? positionX,
     double? positionY,
+    // Tham số mới
+    String? imagePath,
+    String? audioPath,
+    int? audioDuration,
+    String? imageUrl,
+    String? link,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    String? richNote,
   }) {
     return NodeModel(
       id: id ?? this.id,
@@ -103,10 +151,18 @@ class NodeModel extends HiveObject {
       intervalDays: intervalDays ?? this.intervalDays,
       positionX: positionX ?? this.positionX,
       positionY: positionY ?? this.positionY,
+      // Gán giá trị mới
+      imagePath: imagePath ?? this.imagePath,
+      audioPath: audioPath ?? this.audioPath,
+      audioDuration: audioDuration ?? this.audioDuration,
+      imageUrl: imageUrl ?? this.imageUrl,
+      link: link ?? this.link,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      richNote: richNote ?? this.richNote,
     );
   }
 
-  // To JSON for export
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -124,10 +180,18 @@ class NodeModel extends HiveObject {
       'intervalDays': intervalDays,
       'positionX': positionX,
       'positionY': positionY,
+      // Serialize mới
+      'imagePath': imagePath,
+      'audioPath': audioPath,
+      'audioDuration': audioDuration,
+      'imageUrl': imageUrl,
+      'link': link,
+      'createdAt': createdAt?.toIso8601String(),
+      'updatedAt': updatedAt?.toIso8601String(),
+      'richNote': richNote,
     };
   }
 
-  // From JSON for import
   factory NodeModel.fromJson(Map<String, dynamic> json) {
     return NodeModel(
       id: json['id'] as String,
@@ -147,11 +211,19 @@ class NodeModel extends HiveObject {
       intervalDays: json['intervalDays'] as int? ?? 1,
       positionX: (json['positionX'] as num?)?.toDouble(),
       positionY: (json['positionY'] as num?)?.toDouble(),
+      // Deserialize mới
+      imagePath: json['imagePath'] as String?,
+      audioPath: json['audioPath'] as String?,
+      audioDuration: json['audioDuration'] as int?,
+      imageUrl: json['imageUrl'] as String?,
+      link: json['link'] as String?,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'] as String)
+          : null,
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'] as String)
+          : null,
+      richNote: json['richNote'] as String?,
     );
-  }
-
-  @override
-  String toString() {
-    return 'NodeModel(id: $id, content: $content, level: $level, children: ${childIds.length})';
   }
 }

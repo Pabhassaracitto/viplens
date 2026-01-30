@@ -36,9 +36,11 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
   Map<String, Offset> _nodePositions = {};
   Map<String, Size> _nodeSizes = {};
 
-  static const double _nodeSpacingX = 180.0;
-  static const double _nodeSpacingY = 80.0;
-  static const double _rootOffsetX = 100.0;
+  // Tăng khoảng cách để tránh chồng lấn
+  static const double _nodeSpacingX = 220.0;
+  static const double _nodeSpacingY = 25.0;
+  static const double _rootOffsetX = 80.0;
+  static const double _rootOffsetY = 800.0;
 
   @override
   void initState() {
@@ -49,7 +51,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
   @override
   void didUpdateWidget(MindMapCanvas oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.mindmap != widget.mindmap) {
+    if (oldWidget.mindmap != widget.mindmap ||
+        oldWidget.showPaliText != widget.showPaliText) {
       _calculateLayout();
     }
   }
@@ -59,11 +62,10 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
     _nodeSizes.clear();
 
     final root = widget.mindmap.rootNode;
-    _layoutNode(root, _rootOffsetX, 300, 0);
+    _layoutNode(root, _rootOffsetX, _rootOffsetY, 0);
   }
 
   double _layoutNode(NodeModel node, double x, double y, int depth) {
-    // Ước lượng size của node
     final estimatedWidth = _estimateNodeWidth(node);
     final estimatedHeight = _estimateNodeHeight(node);
     _nodeSizes[node.id] = Size(estimatedWidth, estimatedHeight);
@@ -75,69 +77,90 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
       return y + estimatedHeight + _nodeSpacingY;
     }
 
-    // Layout children first
     double childY = y;
-    double minChildY = double.infinity;
-    double maxChildY = 0;
+    double minChildCenterY = double.infinity;
+    double maxChildCenterY = 0;
 
     for (final child in children) {
+      final childHeight = _estimateNodeHeight(child);
+
       final nextY = _layoutNode(child, x + _nodeSpacingX, childY, depth + 1);
 
       final childPos = _nodePositions[child.id];
       if (childPos != null) {
-        minChildY = math.min(minChildY, childPos.dy);
-        maxChildY = math.max(maxChildY, childPos.dy);
+        final childCenterY = childPos.dy + childHeight / 2;
+        minChildCenterY = math.min(minChildCenterY, childCenterY);
+        maxChildCenterY = math.max(maxChildCenterY, childCenterY);
       }
 
       childY = nextY;
     }
 
-    // Center parent vertically relative to children
-    final centerY = (minChildY + maxChildY) / 2;
-    _nodePositions[node.id] = Offset(x, centerY);
+    // Node cha nằm giữa các node con
+    final parentCenterY = (minChildCenterY + maxChildCenterY) / 2;
+    _nodePositions[node.id] = Offset(x, parentCenterY - estimatedHeight / 2);
 
     return childY;
   }
 
   double _estimateNodeWidth(NodeModel node) {
-    final textLength = node.content.length;
-    final baseWidth = 80.0;
-    final charWidth = 8.0;
-    return math.min(180.0, math.max(baseWidth, textLength * charWidth));
+    return widget.isZenMode ? 250.0 : 180.0;
   }
 
   double _estimateNodeHeight(NodeModel node) {
-    double height = 40.0;
-    if (node.paliText != null && node.paliText!.isNotEmpty) {
-      height += 16.0;
+    // Tăng chiều cao ước lượng để không bị cắt
+    double height = 50.0;
+
+    // Ước lượng số dòng dựa trên độ dài nội dung
+    int contentLines = (node.content.length / 18).ceil();
+    contentLines = contentLines.clamp(1, 4);
+    height += (contentLines - 1) * 18.0;
+
+    // Thêm không gian cho Pali
+    if (node.paliText != null &&
+        node.paliText!.isNotEmpty &&
+        widget.showPaliText) {
+      height += 22.0;
     }
+
+    // Thêm không gian cho badge flashcard
     if (node.isFlashcard) {
-      height += 20.0;
+      height += 24.0;
     }
+
     return height;
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: widget.isZenMode ? AppColors.zenBackground : null,
+      color: widget.isZenMode ? AppColors.zenBackground : Colors.grey[50],
       child: InteractiveViewer(
         transformationController: _transformationController,
-        boundaryMargin: const EdgeInsets.all(500),
-        minScale: 0.3,
-        maxScale: 2.5,
+        boundaryMargin: const EdgeInsets.all(1000),
+        minScale: 0.1,
+        maxScale: 3.0,
+        constrained: false,
         child: SizedBox(
-          width: 2000,
-          height: 2000,
-          child: CustomPaint(
-            painter: _ConnectionPainter(
-              mindmap: widget.mindmap,
-              nodePositions: _nodePositions,
-              nodeSizes: _nodeSizes,
-              isZenMode: widget.isZenMode,
-            ),
-            child: Stack(
-              children: widget.mindmap.nodes.map((node) {
+          width: 4000,
+          height: 4000,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Vẽ đường nối
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _ConnectionPainter(
+                    mindmap: widget.mindmap,
+                    nodePositions: _nodePositions,
+                    nodeSizes: _nodeSizes,
+                    isZenMode: widget.isZenMode,
+                  ),
+                ),
+              ),
+
+              // Vẽ các node - KHÔNG dùng RepaintBoundary
+              ...widget.mindmap.nodes.map((node) {
                 final position = _nodePositions[node.id];
                 if (position == null) return const SizedBox.shrink();
 
@@ -145,6 +168,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
                   left: position.dx,
                   top: position.dy,
                   child: NodeWidget(
+                    key: ValueKey(node.id),
                     node: node,
                     isSelected: node.id == widget.selectedNodeId,
                     isRoot: node.id == widget.mindmap.rootNodeId,
@@ -155,8 +179,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
                     onLongPress: () => widget.onNodeLongPress?.call(node.id),
                   ),
                 );
-              }).toList(),
-            ),
+              }),
+            ],
           ),
         ),
       ),
@@ -170,7 +194,7 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
   }
 }
 
-/// Custom painter để vẽ các đường nối giữa nodes
+/// Vẽ đường nối giữa các node
 class _ConnectionPainter extends CustomPainter {
   final MindMapModel mindmap;
   final Map<String, Offset> nodePositions;
@@ -226,16 +250,16 @@ class _ConnectionPainter extends CustomPainter {
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
 
-    // Điểm bắt đầu (bên phải của node cha)
+    // Từ giữa cạnh phải của node cha
     final start = Offset(
       startPos.dx + startSize.width,
       startPos.dy + startSize.height / 2,
     );
 
-    // Điểm kết thúc (bên trái của node con)
+    // Đến giữa cạnh trái của node con
     final end = Offset(endPos.dx, endPos.dy + endSize.height / 2);
 
-    // Vẽ đường cong bezier
+    // Đường cong bezier
     final controlPoint1 = Offset(start.dx + (end.dx - start.dx) / 2, start.dy);
     final controlPoint2 = Offset(start.dx + (end.dx - start.dx) / 2, end.dy);
 

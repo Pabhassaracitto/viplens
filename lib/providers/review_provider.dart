@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-
 import '../models/mindmap_model.dart';
 import '../models/node_model.dart';
 import '../models/review_data.dart';
@@ -12,9 +11,8 @@ class ReviewProvider extends ChangeNotifier {
   bool _isShowingAnswer = false;
   bool _isLoading = false;
   int _reviewedCount = 0;
-  bool _disposed = false;
+  bool _isDisposed = false;
 
-  // Getters
   List<MapEntry<MindMapModel, NodeModel>> get dueFlashcards => _dueFlashcards;
   int get currentIndex => _currentIndex;
   bool get isShowingAnswer => _isShowingAnswer;
@@ -40,10 +38,24 @@ class ReviewProvider extends ChangeNotifier {
     return _currentIndex / totalCount;
   }
 
-  /// Load tất cả flashcards cần ôn tập
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
+  }
+
+  void _safeNotify() {
+    if (_isDisposed) return;
+    Future.microtask(() {
+      if (!_isDisposed) {
+        notifyListeners();
+      }
+    });
+  }
+
   Future<void> loadDueFlashcards() async {
     _isLoading = true;
-    if (!_disposed) notifyListeners();
+    _safeNotify();
 
     try {
       _dueFlashcards = DatabaseService.getAllDueFlashcards();
@@ -54,93 +66,78 @@ class ReviewProvider extends ChangeNotifier {
       debugPrint('Error loading flashcards: $e');
     } finally {
       _isLoading = false;
-      if (!_disposed) notifyListeners();
+      _safeNotify();
     }
   }
 
-  /// Hiện/ẩn đáp án
   void toggleAnswer() {
     _isShowingAnswer = !_isShowingAnswer;
-    notifyListeners();
+    _safeNotify();
   }
 
-  /// Hiện đáp án
   void showAnswer() {
     _isShowingAnswer = true;
-    notifyListeners();
+    _safeNotify();
   }
 
-  /// Ẩn đáp án
   void hideAnswer() {
     _isShowingAnswer = false;
-    notifyListeners();
+    _safeNotify();
   }
 
-  /// Trả lời và chuyển sang card tiếp theo
   Future<void> answerCard(ReviewQuality quality) async {
     if (currentCard == null) return;
 
     final mindmap = currentCard!.key;
     final node = currentCard!.value;
 
-    // Cập nhật node với kết quả ôn tập
     final updatedMindMap = SpacedRepetitionService.updateMindMapAfterReview(
       mindmap,
       node.id,
       quality,
     );
 
-    // Lưu vào database
     await DatabaseService.saveMindMap(updatedMindMap);
 
-    // Chuyển sang card tiếp theo
     _reviewedCount++;
     _currentIndex++;
     _isShowingAnswer = false;
 
-    if (!_disposed) notifyListeners();
+    _safeNotify();
   }
 
-  /// Đánh giá nhanh: Quên
   Future<void> markForgot() async {
     await answerCard(ReviewQuality.forgot);
   }
 
-  /// Đánh giá nhanh: Khó
   Future<void> markHard() async {
     await answerCard(ReviewQuality.difficult);
   }
 
-  /// Đánh giá nhanh: Tốt
   Future<void> markGood() async {
     await answerCard(ReviewQuality.good);
   }
 
-  /// Đánh giá nhanh: Dễ
   Future<void> markEasy() async {
     await answerCard(ReviewQuality.easy);
   }
 
-  /// Bỏ qua card hiện tại (không tính điểm)
   void skipCard() {
     if (_currentIndex < _dueFlashcards.length) {
-      // Di chuyển card hiện tại về cuối
       final skippedCard = _dueFlashcards.removeAt(_currentIndex);
       _dueFlashcards.add(skippedCard);
       _isShowingAnswer = false;
-      notifyListeners();
+      _safeNotify();
     }
   }
 
-  /// Reset phiên ôn tập
   void reset() {
     _currentIndex = 0;
     _reviewedCount = 0;
     _isShowingAnswer = false;
-    notifyListeners();
+    _safeNotify();
   }
 
-  /// Lấy hint cho node (node cha)
   String? getHint() {
     if (currentNode == null || currentMindMap == null) return null;
 
@@ -149,17 +146,5 @@ class ReviewProvider extends ChangeNotifier {
 
     final parent = currentMindMap!.getNodeById(parentId);
     return parent?.content;
-  }
-
-  /// Lấy thống kê tổng
-  ReviewStats getTotalStats() {
-    final mindmaps = DatabaseService.getAllMindMaps();
-    return SpacedRepetitionService.calculateTotalStats(mindmaps);
-  }
-
-  @override
-  void dispose() {
-    _disposed = true;
-    super.dispose();
   }
 }

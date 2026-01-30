@@ -32,13 +32,21 @@ class NodeModelAdapter extends TypeAdapter<NodeModel> {
       intervalDays: fields[12] as int,
       positionX: fields[13] as double?,
       positionY: fields[14] as double?,
+      imagePath: fields[15] as String?,
+      audioPath: fields[16] as String?,
+      audioDuration: fields[17] as int?,
+      imageUrl: fields[18] as String?,
+      link: fields[19] as String?,
+      createdAt: fields[20] as DateTime?,
+      updatedAt: fields[21] as DateTime?,
+      richNote: fields[22] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, NodeModel obj) {
     writer
-      ..writeByte(15)
+      ..writeByte(23)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -68,7 +76,23 @@ class NodeModelAdapter extends TypeAdapter<NodeModel> {
       ..writeByte(13)
       ..write(obj.positionX)
       ..writeByte(14)
-      ..write(obj.positionY);
+      ..write(obj.positionY)
+      ..writeByte(15)
+      ..write(obj.imagePath)
+      ..writeByte(16)
+      ..write(obj.audioPath)
+      ..writeByte(17)
+      ..write(obj.audioDuration)
+      ..writeByte(18)
+      ..write(obj.imageUrl)
+      ..writeByte(19)
+      ..write(obj.link)
+      ..writeByte(20)
+      ..write(obj.createdAt)
+      ..writeByte(21)
+      ..write(obj.updatedAt)
+      ..writeByte(22)
+      ..write(obj.richNote);
   }
 
   @override
