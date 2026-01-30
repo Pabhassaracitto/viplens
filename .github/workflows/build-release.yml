@@ -1,0 +1,66 @@
+name: Build Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0'
+          cache: true
+
+      - name: Setup Java (for Android build)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: gradle
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release --no-tree-shake-icons
+
+      - name: Build Web
+        run: flutter build web --release
+
+      - name: Build IPA (iOS)
+        run: flutter build ios --release --no-codesign
+        continue-on-error: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/web/**/*
+          draft: false
+          prerelease: false
+          body: |
+            ## Release ${{ github.ref_name }}
+            
+            ### 📦 Build Artifacts
+            - APK: app-release.apk
+            - Web: Included in build/web
+            - iOS: Build log available in workflow
+            
+            ### 📱 Installation
+            - **Android**: Download and install the APK
+            - **Web**: Deploy files from build/web folder
+            - **iOS**: Use Xcode to build IPA or use the build folder
+            
+            Built on: ${{ runner.os }} by GitHub Actions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
