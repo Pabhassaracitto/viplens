@@ -40,7 +40,7 @@ class AppTheme {
       ),
 
       // Card
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         elevation: 1,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         color: AppColors.surface,
@@ -185,7 +185,7 @@ class AppTheme {
       ),
 
       // Card
-      cardTheme: CardThemeData(
+      cardTheme: CardTheme(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         color: AppColors.surfaceDark,
@@ -257,7 +257,6 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-
       colorScheme: ColorScheme.dark(
         primary: AppColors.zenAccent,
         secondary: AppColors.zenAccent,
@@ -268,15 +267,12 @@ class AppTheme {
         onSurface: AppColors.zenText,
         onBackground: AppColors.zenText,
       ),
-
       scaffoldBackgroundColor: AppColors.zenBackground,
-
       appBarTheme: const AppBarTheme(
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: AppColors.zenText,
       ),
-
       textTheme: TextTheme(
         displayLarge: const TextStyle(
           fontSize: 36,

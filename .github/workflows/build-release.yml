@@ -36,9 +36,10 @@ jobs:
       - name: Build Web
         run: flutter build web --release
 
-      - name: Build IPA (iOS)
-        run: flutter build ios --release --no-codesign
-        continue-on-error: true
+      # iOS build disabled for now
+      # - name: Build IPA (iOS)
+      #   run: flutter build ios --release --no-codesign
+      #   continue-on-error: true
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -54,7 +55,7 @@ jobs:
             ### 📦 Build Artifacts
             - APK: app-release.apk
             - Web: Included in build/web
-            - iOS: Build log available in workflow
+            # - iOS: Build log available in workflow
             
             ### 📱 Installation
             - **Android**: Download and install the APK

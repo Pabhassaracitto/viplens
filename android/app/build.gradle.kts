@@ -7,8 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.viplens"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 35
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
