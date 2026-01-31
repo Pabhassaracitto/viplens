@@ -1,3 +1,4 @@
+//Cập nhật 0028310126
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -10,6 +11,11 @@ import '../widgets/mindmap_card.dart';
 import 'editor_screen.dart';
 import 'mindmap_screen.dart';
 import 'review_screen.dart';
+// Thêm imports
+import 'statistics_screen.dart';
+import 'settings_screen.dart';
+import '../services/export_service.dart';
+import '../services/import_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -112,6 +118,30 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: ListTile(
                     leading: Icon(Icons.backup),
                     title: Text('Sao lưu'),
+                    dense: true,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'stats',
+                  child: ListTile(
+                    leading: Icon(Icons.bar_chart),
+                    title: Text('Thống kê'),
+                    dense: true,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'import',
+                  child: ListTile(
+                    leading: Icon(Icons.file_upload),
+                    title: Text('Import'),
+                    dense: true,
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'settings',
+                  child: ListTile(
+                    leading: Icon(Icons.settings),
+                    title: Text('Cài đặt'),
                     dense: true,
                   ),
                 ),
@@ -319,6 +349,21 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'backup':
         _showBackupDialog();
         break;
+      case 'stats':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const StatisticsScreen()),
+        );
+        break;
+      case 'import':
+        _importData();
+        break;
+      case 'settings':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SettingsScreen()),
+        );
+        break;
       case 'about':
         _showAboutDialog();
         break;
@@ -474,5 +519,19 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
     );
+  }
+
+  Future<void> _importData() async {
+    final result = await ImportService.pickAndImport();
+    if (mounted) {
+      Helpers.showSnackBar(
+        context,
+        result.message,
+        isError: !result.success,
+      );
+      if (result.success) {
+        context.read<MindMapProvider>().loadMindMaps();
+      }
+    }
   }
 }

@@ -1,4 +1,6 @@
 import 'package:hive_flutter/hive_flutter.dart';
+
+import '../models/folder_model.dart'; // Thêm dòng này
 import '../models/mindmap_model.dart';
 import '../models/node_model.dart';
 
@@ -8,6 +10,7 @@ class DatabaseService {
 
   static late Box<MindMapModel> _mindmapBox;
   static late Box<dynamic> _settingsBox;
+  static late Box<FolderModel> _folderBox;
 
   /// Khởi tạo database
   static Future<void> initialize() async {
@@ -20,10 +23,14 @@ class DatabaseService {
     if (!Hive.isAdapterRegistered(1)) {
       Hive.registerAdapter(MindMapModelAdapter());
     }
+    if (!Hive.isAdapterRegistered(2)) {
+      Hive.registerAdapter(FolderModelAdapter());
+    }
 
     // Mở các boxes
     _mindmapBox = await Hive.openBox<MindMapModel>(_mindmapBoxName);
     _settingsBox = await Hive.openBox(_settingsBoxName);
+    _folderBox = await Hive.openBox<FolderModel>('folders');
   }
 
   // ==================== MINDMAP OPERATIONS ====================
@@ -46,8 +53,8 @@ class DatabaseService {
   /// Lưu mindmap (tạo mới hoặc cập nhật)
   static Future<void> saveMindMap(MindMapModel mindmap) async {
     final index = _mindmapBox.values.toList().indexWhere(
-      (m) => m.id == mindmap.id,
-    );
+          (m) => m.id == mindmap.id,
+        );
 
     if (index >= 0) {
       await _mindmapBox.putAt(index, mindmap);
@@ -90,7 +97,8 @@ class DatabaseService {
       }
 
       return false;
-    }).toList()..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    }).toList()
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
 
   // ==================== FLASHCARD OPERATIONS ====================
@@ -190,5 +198,48 @@ class DatabaseService {
   /// Xóa tất cả data
   static Future<void> clearAllData() async {
     await _mindmapBox.clear();
+  }
+  // ==================== FOLDER OPERATIONS ====================
+
+  /// Lấy tất cả folders
+  static List<FolderModel> getAllFolders() {
+    return _folderBox.values.toList()
+      ..sort((a, b) => a.order.compareTo(b.order));
+  }
+
+  /// Lưu folder
+  static Future<void> saveFolder(FolderModel folder) async {
+    final index = _folderBox.values.toList().indexWhere(
+          (f) => f.id == folder.id,
+        );
+    if (index >= 0) {
+      await _folderBox.putAt(index, folder);
+    } else {
+      await _folderBox.add(folder);
+    }
+  }
+
+  /// Xóa folder
+  static Future<void> deleteFolder(String id) async {
+    final index = _folderBox.values.toList().indexWhere((f) => f.id == id);
+    if (index >= 0) {
+      await _folderBox.deleteAt(index);
+    }
+
+    // Cập nhật các mindmap trong folder này
+    final mindmaps = getAllMindMaps().where((m) => m.folderId == id);
+    for (final m in mindmaps) {
+      await saveMindMap(m.copyWith(folderId: null));
+    }
+  }
+
+  /// Lấy mindmaps trong folder
+  static List<MindMapModel> getMindMapsInFolder(String? folderId) {
+    return getAllMindMaps().where((m) => m.folderId == folderId).toList();
+  }
+
+  /// Đếm mindmaps trong folder
+  static int getMindMapCountInFolder(String? folderId) {
+    return getAllMindMaps().where((m) => m.folderId == folderId).length;
   }
 }
