@@ -129,10 +129,10 @@ class _EditorScreenState extends State<EditorScreen> {
                 color: AppColors.info.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Row(
+              child: const Row(
                 children: [
                   Icon(Icons.info_outline, size: 20, color: AppColors.info),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Dùng dấu - hoặc Tab để tạo cấp độ.\n'
@@ -152,8 +152,7 @@ class _EditorScreenState extends State<EditorScreen> {
               focusNode: _contentFocusNode,
               decoration: InputDecoration(
                 labelText: 'Nội dung',
-                hintText:
-                    'Nhập nội dung...\n\n'
+                hintText: 'Nhập nội dung...\n\n'
                     'Ví dụ:\n'
                     '- Khổ đế (Dukkha)\n'
                     '  - Sinh là khổ\n'

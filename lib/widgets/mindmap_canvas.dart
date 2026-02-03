@@ -33,8 +33,8 @@ class _MindMapCanvasState extends State<MindMapCanvas> {
   final TransformationController _transformationController =
       TransformationController();
 
-  Map<String, Offset> _nodePositions = {};
-  Map<String, Size> _nodeSizes = {};
+  final Map<String, Offset> _nodePositions = {};
+  final Map<String, Size> _nodeSizes = {};
 
   // Tăng khoảng cách để tránh chồng lấn
   static const double _nodeSpacingX = 220.0;

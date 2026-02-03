@@ -66,7 +66,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
               LinearProgressIndicator(
                 value: provider.progress,
                 backgroundColor: Colors.grey[200],
-                valueColor: AlwaysStoppedAnimation(AppColors.primary),
+                valueColor: const AlwaysStoppedAnimation(AppColors.primary),
               ),
 
               // Card
@@ -125,7 +125,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.celebration, size: 80, color: AppColors.success),
+            const Icon(Icons.celebration, size: 80, color: AppColors.success),
             const SizedBox(height: 24),
             Text(
               'Tuyệt vời!',
@@ -166,7 +166,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 color: AppColors.success.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.check_circle,
                 size: 60,
                 color: AppColors.success,

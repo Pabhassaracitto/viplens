@@ -81,14 +81,16 @@ class DatabaseService {
       if (map.title.toLowerCase().contains(lowerQuery)) return true;
 
       // Tìm trong description
-      if (map.description?.toLowerCase().contains(lowerQuery) ?? false)
+      if (map.description?.toLowerCase().contains(lowerQuery) ?? false) {
         return true;
+      }
 
       // Tìm trong nodes
       for (final node in map.nodes) {
         if (node.content.toLowerCase().contains(lowerQuery)) return true;
-        if (node.paliText?.toLowerCase().contains(lowerQuery) ?? false)
+        if (node.paliText?.toLowerCase().contains(lowerQuery) ?? false) {
           return true;
+        }
       }
 
       // Tìm trong tags

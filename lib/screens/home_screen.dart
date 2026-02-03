@@ -2,8 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../providers/folder_provider.dart';
 import '../providers/mindmap_provider.dart';
 import '../providers/review_provider.dart';
+import '../services/import_service.dart';
+import '../services/search_service.dart';
 import '../utils/colors.dart';
 import '../utils/constants.dart';
 import '../utils/helpers.dart';
@@ -11,11 +14,9 @@ import '../widgets/mindmap_card.dart';
 import 'editor_screen.dart';
 import 'mindmap_screen.dart';
 import 'review_screen.dart';
+import 'settings_screen.dart';
 // Thêm imports
 import 'statistics_screen.dart';
-import 'settings_screen.dart';
-import '../services/export_service.dart';
-import '../services/import_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -32,6 +33,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String? _selectedFolderId; //Mới thêm tạo tag và folders quản lý
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
 
@@ -39,10 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<MindMapProvider>().loadMindMaps();
-        context.read<ReviewProvider>().loadDueFlashcards();
-      }
+      context.read<MindMapProvider>().loadMindMaps();
+      context.read<ReviewProvider>().loadDueFlashcards();
+      context.read<FolderProvider>().loadFolders(); // THÊM DÒNG NÀY
     });
   }
 
@@ -83,19 +84,22 @@ class _HomeScreenState extends State<HomeScreen> {
                   context.read<MindMapProvider>().search(value);
                 },
               )
-            : Row(
+            : const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('🪷', style: TextStyle(fontSize: 24)),
-                  const SizedBox(width: 8),
-                  const Text('Dhamma Mind'),
+                  SizedBox(width: 8),
+                  Text('Dhamma Mind'),
                 ],
               ),
         actions: [
           if (_isSearching)
             IconButton(icon: const Icon(Icons.close), onPressed: _stopSearch)
           else ...[
-            IconButton(icon: const Icon(Icons.search), onPressed: _startSearch),
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () => _openAdvancedSearch(),
+            ),
             IconButton(
               icon: Icon(
                 widget.isDarkMode ? Icons.light_mode : Icons.dark_mode,
@@ -164,6 +168,13 @@ class _HomeScreenState extends State<HomeScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
+          // Di chuyển logic lọc ra ngoài builder để dùng chung cho cả childCount và builder
+          final filteredMindmaps = _selectedFolderId == null
+              ? provider.mindmaps
+              : provider.mindmaps
+                  .where((m) => m.folderId == _selectedFolderId)
+                  .toList();
+
           return RefreshIndicator(
             onRefresh: () async {
               await provider.loadMindMaps();
@@ -187,6 +198,79 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (provider.mindmaps.isEmpty)
                   SliverFillRemaining(child: _buildEmptyState())
                 else ...[
+                  // Folders section
+                  SliverToBoxAdapter(
+                    child: Consumer<FolderProvider>(
+                      builder: (context, folderProvider, _) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                              child: Row(
+                                children: [
+                                  Text(
+                                    'Thư mục',
+                                    style:
+                                        Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                  const Spacer(),
+                                  IconButton(
+                                    icon: const Icon(
+                                        Icons.create_new_folder_outlined,
+                                        size: 20),
+                                    onPressed: () =>
+                                        _createFolder(folderProvider),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(
+                              height: 50,
+                              child: ListView(
+                                scrollDirection: Axis.horizontal,
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
+                                children: [
+                                  // Nút "Tất cả"
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 4),
+                                    child: FilterChip(
+                                      label: const Text('Tất cả'),
+                                      selected: _selectedFolderId == null,
+                                      onSelected: (_) {
+                                        setState(
+                                            () => _selectedFolderId = null);
+                                      },
+                                    ),
+                                  ),
+                                  // Các folders
+                                  ...folderProvider.folders
+                                      .map((folder) => Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 4),
+                                            child: FilterChip(
+                                              label: Text(folder.name),
+                                              selected: _selectedFolderId ==
+                                                  folder.id,
+                                              onSelected: (_) {
+                                                setState(() =>
+                                                    _selectedFolderId =
+                                                        folder.id);
+                                              },
+                                              onDeleted: () => _deleteFolder(
+                                                  folderProvider, folder.id),
+                                            ),
+                                          )),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
                   // Section header
                   SliverToBoxAdapter(
                     child: Padding(
@@ -209,18 +293,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
                   // Mindmap list
                   SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final mindmap = provider.mindmaps[index];
-                      return MindMapCard(
-                        mindmap: mindmap,
-                        onTap: () => _openMindMap(mindmap.id),
-                        onEdit: () => _editMindMap(mindmap.id),
-                        onDelete: () => _deleteMindMap(mindmap.id),
-                        onReview: mindmap.dueFlashcardCount > 0
-                            ? () => _reviewMindMap(mindmap.id)
-                            : null,
-                      );
-                    }, childCount: provider.mindmaps.length),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final mindmap = filteredMindmaps[index];
+                        return MindMapCard(
+                          mindmap: mindmap,
+                          onTap: () => _openMindMap(mindmap.id),
+                          onEdit: () => _editMindMap(mindmap.id),
+                          onDelete: () => _deleteMindMap(mindmap.id),
+                          onReview: mindmap.dueFlashcardCount > 0
+                              ? () => _reviewMindMap(mindmap.id)
+                              : null,
+                        );
+                      },
+                      childCount: filteredMindmaps.length,
+                    ),
                   ),
 
                   // Bottom padding
@@ -336,6 +423,29 @@ class _HomeScreenState extends State<HomeScreen> {
               label: const Text('Dùng mẫu Phật học'),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  void _openAdvancedSearch() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.9,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        expand: false,
+        builder: (context, scrollController) => _AdvancedSearchSheet(
+          scrollController: scrollController,
+          onSelectMindmap: (id) {
+            Navigator.pop(context);
+            _openMindMap(id);
+          },
         ),
       ),
     );
@@ -475,9 +585,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     trailing: const Icon(Icons.add_circle_outline),
                     onTap: () async {
                       Navigator.pop(context);
+                      // Tạo nội dung từ template
+                      final content = items.join('\n');
                       final mindmap = await context
                           .read<MindMapProvider>()
-                          .createMindMapFromTemplate(name, items);
+                          .createMindMapFromText(content, name);
+
                       if (mounted) {
                         Navigator.push(
                           context,
@@ -533,5 +646,209 @@ class _HomeScreenState extends State<HomeScreen> {
         context.read<MindMapProvider>().loadMindMaps();
       }
     }
+  }
+
+  // Thêm các hàm xử lý folder
+  Future<void> _createFolder(FolderProvider provider) async {
+    final name = await Helpers.showInputDialog(
+      context,
+      title: 'Tạo thư mục mới',
+      hintText: 'Tên thư mục...',
+    );
+
+    if (name != null && name.isNotEmpty) {
+      await provider.createFolder(name);
+    }
+  }
+
+  Future<void> _deleteFolder(FolderProvider provider, String id) async {
+    final confirmed = await Helpers.showConfirmDialog(
+      context,
+      title: 'Xóa thư mục?',
+      message: 'Các sơ đồ trong thư mục sẽ không bị xóa.',
+      confirmText: 'Xóa',
+      isDestructive: true,
+    );
+
+    if (confirmed) {
+      await provider.deleteFolder(id);
+      if (_selectedFolderId == id) {
+        setState(() => _selectedFolderId = null);
+      }
+    }
+  }
+}
+
+class _AdvancedSearchSheet extends StatefulWidget {
+  final ScrollController scrollController;
+  final Function(String) onSelectMindmap;
+
+  const _AdvancedSearchSheet({
+    required this.scrollController,
+    required this.onSelectMindmap,
+  });
+
+  @override
+  State<_AdvancedSearchSheet> createState() => _AdvancedSearchSheetState();
+}
+
+class _AdvancedSearchSheetState extends State<_AdvancedSearchSheet> {
+  final TextEditingController _searchController = TextEditingController();
+  List<SearchResult> _results = [];
+  SearchScope _scope = SearchScope.all;
+  final SortOrder _sortOrder = SortOrder.relevance;
+  final bool _flashcardsOnly = false;
+
+  void _search() {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) {
+      setState(() => _results = []);
+      return;
+    }
+
+    final results = SearchService.advancedSearch(
+      query: query,
+      scope: _scope,
+      sortOrder: _sortOrder,
+      flashcardsOnly: _flashcardsOnly,
+    );
+
+    setState(() => _results = results);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Handle bar
+        Container(
+          margin: const EdgeInsets.only(top: 12),
+          width: 40,
+          height: 4,
+          decoration: BoxDecoration(
+            color: Colors.grey[300],
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: TextField(
+            controller: _searchController,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: 'Tìm kiếm...',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() => _results = []);
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onChanged: (_) => _search(),
+          ),
+        ),
+
+        // Filters
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Wrap(
+            spacing: 8,
+            children: [
+              ChoiceChip(
+                label: const Text('Tất cả'),
+                selected: _scope == SearchScope.all,
+                onSelected: (_) {
+                  setState(() => _scope = SearchScope.all);
+                  _search();
+                },
+              ),
+              ChoiceChip(
+                label: const Text('Tiêu đề'),
+                selected: _scope == SearchScope.titles,
+                onSelected: (_) {
+                  setState(() => _scope = SearchScope.titles);
+                  _search();
+                },
+              ),
+              ChoiceChip(
+                label: const Text('Pali'),
+                selected: _scope == SearchScope.pali,
+                onSelected: (_) {
+                  setState(() => _scope = SearchScope.pali);
+                  _search();
+                },
+              ),
+              ChoiceChip(
+                label: const Text('Ghi chú'),
+                selected: _scope == SearchScope.notes,
+                onSelected: (_) {
+                  setState(() => _scope = SearchScope.notes);
+                  _search();
+                },
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 8),
+
+        // Results
+        Expanded(
+          child: _results.isEmpty
+              ? Center(
+                  child: Text(
+                    _searchController.text.isEmpty
+                        ? 'Nhập từ khóa để tìm kiếm'
+                        : 'Không tìm thấy kết quả',
+                    style: TextStyle(color: Colors.grey[600]),
+                  ),
+                )
+              : ListView.builder(
+                  controller: widget.scrollController,
+                  itemCount: _results.length,
+                  itemBuilder: (context, index) {
+                    final result = _results[index];
+                    return ListTile(
+                      leading: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.account_tree,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                      ),
+                      title: Text(result.mindmap.title),
+                      subtitle: Text(
+                        '${result.matchedNodes.length} kết quả • '
+                        '${result.mindmap.nodes.length} nodes',
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => widget.onSelectMindmap(result.mindmap.id),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 }

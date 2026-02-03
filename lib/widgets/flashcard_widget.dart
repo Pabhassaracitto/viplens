@@ -131,7 +131,7 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
               widget.node.paliText!.isNotEmpty) ...[
             Text(
               widget.node.paliText!,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontStyle: FontStyle.italic,
                 color: AppColors.textSecondary,
@@ -198,7 +198,7 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
               color: AppColors.success.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Row(
+            child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
@@ -206,7 +206,7 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
                   size: 16,
                   color: AppColors.success,
                 ),
-                const SizedBox(width: 6),
+                SizedBox(width: 6),
                 Text(
                   'Đáp án',
                   style: TextStyle(
@@ -232,7 +232,7 @@ class _FlashcardWidgetState extends State<FlashcardWidget>
                         child.paliText!.isNotEmpty) ...[
                       Text(
                         child.paliText!,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
                           fontStyle: FontStyle.italic,
                           color: AppColors.textSecondary,

@@ -106,12 +106,31 @@ class BuddhistTemplates {
       'Tâm niệm xứ (Cittānupassanā)',
       'Pháp niệm xứ (Dhammānupassanā)',
     ],
-    'Tam Học': ['Giới (Sīla)', 'Định (Samādhi)', 'Tuệ (Paññā)'],
+    'Tam Học': [
+      'Giới (Sīla)',
+      'Định (Samādhi)',
+      'Tuệ (Paññā)',
+    ],
     'Tứ Vô Lượng Tâm': [
       'Từ (Mettā)',
       'Bi (Karuṇā)',
       'Hỷ (Muditā)',
       'Xả (Upekkhā)',
+    ],
+    'Ngũ Giới': [
+      'Không sát sinh (Pāṇātipātā)',
+      'Không trộm cắp (Adinnādānā)',
+      'Không tà dâm (Kāmesumicchācāra)',
+      'Không nói dối (Musāvādā)',
+      'Không uống rượu (Surāmerayamajjapamādaṭṭhānā)',
+    ],
+    'Lục Độ': [
+      'Bố thí (Dāna)',
+      'Trì giới (Sīla)',
+      'Nhẫn nhục (Khanti)',
+      'Tinh tấn (Vīriya)',
+      'Thiền định (Jhāna)',
+      'Trí tuệ (Paññā)',
     ],
   };
 

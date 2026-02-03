@@ -109,16 +109,16 @@ class _SwipeFlashcardWidgetState extends State<SwipeFlashcardWidget> {
             onEnd: widget.onComplete,
             cardBuilder:
                 (context, index, percentThresholdX, percentThresholdY) {
-                  final card = widget.cards[index];
-                  final node = card.value;
-                  final mindmap = card.key;
-                  final isCurrentCard = index == _currentIndex;
+              final card = widget.cards[index];
+              final node = card.value;
+              final mindmap = card.key;
+              final isCurrentCard = index == _currentIndex;
 
-                  return GestureDetector(
-                    onTap: isCurrentCard ? _toggleAnswer : null,
-                    child: _buildCard(node, mindmap, isCurrentCard),
-                  );
-                },
+              return GestureDetector(
+                onTap: isCurrentCard ? _toggleAnswer : null,
+                child: _buildCard(node, mindmap, isCurrentCard),
+              );
+            },
           ),
         ),
 
@@ -142,9 +142,8 @@ class _SwipeFlashcardWidgetState extends State<SwipeFlashcardWidget> {
   Widget _buildCard(NodeModel node, MindMapModel mindmap, bool isCurrentCard) {
     final showAnswer = isCurrentCard && _showingAnswer;
     final children = mindmap.getChildren(node.id);
-    final parent = node.parentId != null
-        ? mindmap.getNodeById(node.parentId!)
-        : null;
+    final parent =
+        node.parentId != null ? mindmap.getNodeById(node.parentId!) : null;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -186,7 +185,8 @@ class _SwipeFlashcardWidgetState extends State<SwipeFlashcardWidget> {
                 ),
                 child: Text(
                   parent.content,
-                  style: TextStyle(fontSize: 12, color: AppColors.primary),
+                  style:
+                      const TextStyle(fontSize: 12, color: AppColors.primary),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -202,11 +202,11 @@ class _SwipeFlashcardWidgetState extends State<SwipeFlashcardWidget> {
                   color: AppColors.accent.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.style, size: 14, color: AppColors.accent),
-                    const SizedBox(width: 4),
+                    SizedBox(width: 4),
                     Text(
                       'Thẻ ghi nhớ',
                       style: TextStyle(fontSize: 11, color: AppColors.accent),
@@ -262,11 +262,11 @@ class _SwipeFlashcardWidgetState extends State<SwipeFlashcardWidget> {
                   color: AppColors.success.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.lightbulb, size: 16, color: AppColors.success),
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6),
                     Text(
                       'Đáp án',
                       style: TextStyle(
@@ -280,9 +280,7 @@ class _SwipeFlashcardWidgetState extends State<SwipeFlashcardWidget> {
               ),
               const SizedBox(height: 24),
               if (children.isNotEmpty)
-                ...children
-                    .take(5)
-                    .map(
+                ...children.take(5).map(
                       (child) => Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6),
                         child: Column(

@@ -1,13 +1,14 @@
 // Giai đoạn 2
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/settings_provider.dart';
-import '../services/notification_service.dart';
 import '../services/export_service.dart';
 import '../services/import_service.dart';
-import '../utils/helpers.dart';
+import '../services/notification_service.dart';
 import '../utils/colors.dart';
 import '../utils/constants.dart';
+import '../utils/helpers.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -160,7 +161,7 @@ class SettingsScreen extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Text(
         title.toUpperCase(),
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: AppColors.primary,

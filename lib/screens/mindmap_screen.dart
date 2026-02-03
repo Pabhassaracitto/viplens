@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:viplens/models/mindmap_model.dart';
 
 import '../models/node_model.dart';
 import '../providers/mindmap_provider.dart';
@@ -159,7 +160,7 @@ class _MindMapScreenState extends State<MindMapScreen> {
     );
   }
 
-  Widget _buildListView(mindmap, MindMapProvider provider) {
+  Widget _buildListView(MindMapModel mindmap, MindMapProvider provider) {
     List<NodeModel> flatNodes = [];
 
     void addNode(String nodeId) {
@@ -217,6 +218,13 @@ class _MindMapScreenState extends State<MindMapScreen> {
               label: 'Thêm con',
               onTap: () => _addChildNode(provider),
             ),
+            // THÊM NÚT GHI CHÚ
+            _buildActionButton(
+              icon: node.hasNote ? Icons.note : Icons.note_add_outlined,
+              label: 'Ghi chú',
+              color: node.hasNote ? AppColors.info : null,
+              onTap: () => _editNodeNote(node, provider),
+            ),
             _buildActionButton(
               icon: node.isFlashcard ? Icons.style : Icons.style_outlined,
               label: node.isFlashcard ? 'Bỏ thẻ' : 'Tạo thẻ',
@@ -234,6 +242,25 @@ class _MindMapScreenState extends State<MindMapScreen> {
         ),
       ),
     );
+  }
+
+// THÊM HÀM MỚI
+  Future<void> _editNodeNote(NodeModel node, MindMapProvider provider) async {
+    final result = await showDialog<Map<String, String?>>(
+      context: context,
+      builder: (context) => _NoteDialog(
+        initialNote: node.note,
+        initialPali: node.paliText,
+      ),
+    );
+
+    if (result != null) {
+      await provider.updateNodeNote(
+        node.id,
+        result['note'] ?? '',
+        result['pali'],
+      );
+    }
   }
 
   Widget _buildActionButton({
@@ -410,5 +437,87 @@ class _MindMapScreenState extends State<MindMapScreen> {
 
   void _exportMindmap(MindMapProvider provider) {
     Helpers.showSnackBar(context, 'Tính năng đang phát triển');
+  }
+}
+
+class _NoteDialog extends StatefulWidget {
+  final String? initialNote;
+  final String? initialPali;
+
+  const _NoteDialog({
+    this.initialNote,
+    this.initialPali,
+  });
+
+  @override
+  State<_NoteDialog> createState() => _NoteDialogState();
+}
+
+class _NoteDialogState extends State<_NoteDialog> {
+  late TextEditingController _noteController;
+  late TextEditingController _paliController;
+
+  @override
+  void initState() {
+    super.initState();
+    _noteController = TextEditingController(text: widget.initialNote);
+    _paliController = TextEditingController(text: widget.initialPali);
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    _paliController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Ghi chú'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _paliController,
+              decoration: const InputDecoration(
+                labelText: 'Văn bản Pali',
+                hintText: 'Nhập văn bản Pali...',
+                border: OutlineInputBorder(),
+              ),
+              style: const TextStyle(fontStyle: FontStyle.italic),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _noteController,
+              decoration: const InputDecoration(
+                labelText: 'Ghi chú',
+                hintText: 'Nhập ghi chú...',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 5,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Hủy'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context, {
+              'note': _noteController.text.trim(),
+              'pali': _paliController.text.trim().isEmpty
+                  ? null
+                  : _paliController.text.trim(),
+            });
+          },
+          child: const Text('Lưu'),
+        ),
+      ],
+    );
   }
 }

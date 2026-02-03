@@ -1,5 +1,4 @@
 import 'package:hive_flutter/hive_flutter.dart';
-import '../models/mindmap_model.dart';
 import '../models/review_history.dart';
 import 'database_service.dart';
 
@@ -176,9 +175,8 @@ class StatisticsService {
       learningCards: learningCards,
       newCards: newCards,
       totalReviews: _historyBox.length,
-      averageEaseFactor: easeFactorCount > 0
-          ? totalEaseFactor / easeFactorCount
-          : 2.5,
+      averageEaseFactor:
+          easeFactorCount > 0 ? totalEaseFactor / easeFactorCount : 2.5,
       currentStreak: getCurrentStreak(),
       longestStreak: getLongestStreak(),
     );

@@ -10,16 +10,14 @@ class AppTheme {
       brightness: Brightness.light,
 
       // Colors
-      colorScheme: ColorScheme.light(
+      colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         secondary: AppColors.accent,
         surface: AppColors.surface,
-        background: AppColors.background,
         error: AppColors.error,
         onPrimary: Colors.white,
         onSecondary: Colors.black,
         onSurface: AppColors.textPrimary,
-        onBackground: AppColors.textPrimary,
         onError: Colors.white,
       ),
 
@@ -155,16 +153,14 @@ class AppTheme {
       brightness: Brightness.dark,
 
       // Colors
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         secondary: AppColors.accent,
         surface: AppColors.surfaceDark,
-        background: AppColors.backgroundDark,
         error: AppColors.error,
         onPrimary: Colors.white,
         onSecondary: Colors.black,
         onSurface: AppColors.textPrimaryDark,
-        onBackground: AppColors.textPrimaryDark,
         onError: Colors.white,
       ),
 
@@ -257,15 +253,13 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      colorScheme: ColorScheme.dark(
+      colorScheme: const ColorScheme.dark(
         primary: AppColors.zenAccent,
         secondary: AppColors.zenAccent,
         surface: AppColors.zenSurface,
-        background: AppColors.zenBackground,
         onPrimary: Colors.white,
         onSecondary: Colors.white,
         onSurface: AppColors.zenText,
-        onBackground: AppColors.zenText,
       ),
       scaffoldBackgroundColor: AppColors.zenBackground,
       appBarTheme: const AppBarTheme(
