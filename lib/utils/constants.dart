@@ -2,7 +2,7 @@
 class AppConstants {
   // App info
   static const String appName = 'Dhamma Mind';
-  static const String appVersion = '1.0.0';
+  static const String appVersion = '1.2.0';
   static const String appDescription =
       'Ứng dụng Mindmap cho việc học tập và tu tập Phật pháp';
 
