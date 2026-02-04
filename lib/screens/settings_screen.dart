@@ -133,7 +133,7 @@ class SettingsScreen extends StatelessWidget {
               ListTile(
                 leading: const Icon(Icons.info_outline),
                 title: const Text('Về ứng dụng'),
-                subtitle: Text('Phiên bản ${AppConstants.appVersion}'),
+                subtitle: const Text('Phiên bản ${AppConstants.appVersion}'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => _showAboutDialog(context),
               ),

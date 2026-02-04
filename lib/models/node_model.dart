@@ -28,6 +28,7 @@ class NodeModel extends HiveObject {
   @HiveField(7)
   int colorIndex;
 
+  // Flashcard data
   @HiveField(8)
   bool isFlashcard;
 
@@ -43,28 +44,28 @@ class NodeModel extends HiveObject {
   @HiveField(12)
   int intervalDays;
 
+  // Position for mindmap canvas
   @HiveField(13)
   double? positionX;
 
   @HiveField(14)
   double? positionY;
 
-  // --- CÁC TRƯỜNG MỚI (GIAI ĐOẠN 3) ---
-
+  // NEW - Media attachments
   @HiveField(15)
-  String? imagePath;
+  String? imagePath; // Đường dẫn hình ảnh local
 
   @HiveField(16)
-  String? audioPath;
+  String? audioPath; // Đường dẫn audio local
 
   @HiveField(17)
-  int? audioDuration;
+  int? audioDuration; // Thời lượng audio (milliseconds)
 
   @HiveField(18)
-  String? imageUrl;
+  String? imageUrl; // URL hình ảnh online (nếu có)
 
   @HiveField(19)
-  String? link;
+  String? link; // Link URL đính kèm
 
   @HiveField(20)
   DateTime? createdAt;
@@ -72,6 +73,7 @@ class NodeModel extends HiveObject {
   @HiveField(21)
   DateTime? updatedAt;
 
+  // Rich text note (JSON format from flutter_quill)
   @HiveField(22)
   String? richNote;
 
@@ -91,7 +93,6 @@ class NodeModel extends HiveObject {
     this.intervalDays = 1,
     this.positionX,
     this.positionY,
-    // Tham số mới
     this.imagePath,
     this.audioPath,
     this.audioDuration,
@@ -102,13 +103,16 @@ class NodeModel extends HiveObject {
     this.richNote,
   }) : childIds = childIds ?? [];
 
-  // Getters tiện ích
+  // Kiểm tra có media không
   bool get hasImage => imagePath != null || imageUrl != null;
   bool get hasAudio => audioPath != null;
   bool get hasNote =>
       (note != null && note!.isNotEmpty) ||
       (richNote != null && richNote!.isNotEmpty);
+  bool get hasLink => link != null && link!.isNotEmpty;
+  bool get hasMedia => hasImage || hasAudio;
 
+  // Copy with method
   NodeModel copyWith({
     String? id,
     String? content,
@@ -125,7 +129,6 @@ class NodeModel extends HiveObject {
     int? intervalDays,
     double? positionX,
     double? positionY,
-    // Tham số mới
     String? imagePath,
     String? audioPath,
     int? audioDuration,
@@ -151,7 +154,6 @@ class NodeModel extends HiveObject {
       intervalDays: intervalDays ?? this.intervalDays,
       positionX: positionX ?? this.positionX,
       positionY: positionY ?? this.positionY,
-      // Gán giá trị mới
       imagePath: imagePath ?? this.imagePath,
       audioPath: audioPath ?? this.audioPath,
       audioDuration: audioDuration ?? this.audioDuration,
@@ -163,6 +165,7 @@ class NodeModel extends HiveObject {
     );
   }
 
+  // To JSON for export
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -180,7 +183,6 @@ class NodeModel extends HiveObject {
       'intervalDays': intervalDays,
       'positionX': positionX,
       'positionY': positionY,
-      // Serialize mới
       'imagePath': imagePath,
       'audioPath': audioPath,
       'audioDuration': audioDuration,
@@ -192,6 +194,7 @@ class NodeModel extends HiveObject {
     };
   }
 
+  // From JSON for import
   factory NodeModel.fromJson(Map<String, dynamic> json) {
     return NodeModel(
       id: json['id'] as String,
@@ -211,7 +214,6 @@ class NodeModel extends HiveObject {
       intervalDays: json['intervalDays'] as int? ?? 1,
       positionX: (json['positionX'] as num?)?.toDouble(),
       positionY: (json['positionY'] as num?)?.toDouble(),
-      // Deserialize mới
       imagePath: json['imagePath'] as String?,
       audioPath: json['audioPath'] as String?,
       audioDuration: json['audioDuration'] as int?,
@@ -225,5 +227,10 @@ class NodeModel extends HiveObject {
           : null,
       richNote: json['richNote'] as String?,
     );
+  }
+
+  @override
+  String toString() {
+    return 'NodeModel(id: $id, content: $content, level: $level, children: ${childIds.length})';
   }
 }

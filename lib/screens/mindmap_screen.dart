@@ -9,6 +9,8 @@ import '../utils/helpers.dart';
 import '../widgets/mindmap_canvas.dart';
 import '../widgets/node_widget.dart';
 import 'editor_screen.dart';
+import 'node_detail_screen.dart';
+import 'presentation_screen.dart';
 import 'review_screen.dart';
 
 class MindMapScreen extends StatefulWidget {
@@ -108,6 +110,14 @@ class _MindMapScreenState extends State<MindMapScreen> {
                             dense: true,
                           ),
                         ),
+                        const PopupMenuItem(
+                          value: 'present',
+                          child: ListTile(
+                            leading: Icon(Icons.slideshow),
+                            title: Text('Trình chiếu'),
+                            dense: true,
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -124,7 +134,15 @@ class _MindMapScreenState extends State<MindMapScreen> {
                         provider.selectNode(nodeId);
                       },
                       onNodeDoubleTap: (nodeId) {
-                        _editNode(nodeId, provider);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => NodeDetailScreen(
+                              mindmapId: widget.mindmapId,
+                              nodeId: nodeId,
+                            ),
+                          ),
+                        );
                       },
                       onNodeLongPress: (nodeId) {
                         _showNodeOptions(nodeId, provider);
@@ -304,6 +322,17 @@ class _MindMapScreenState extends State<MindMapScreen> {
         break;
       case 'export':
         _exportMindmap(provider);
+        break;
+      case 'present':
+        if (provider.currentMindMap != null) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  PresentationScreen(mindmap: provider.currentMindMap!),
+            ),
+          );
+        }
         break;
     }
   }

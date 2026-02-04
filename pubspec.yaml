@@ -63,6 +63,33 @@ dependencies:
   # Permission handling
   permission_handler: ^11.1.0
   share_plus: ^9.0.0
+  path_provider: ^2.1.3
+  path: ^1.9.0
+
+ # NEW - Giai đoạn 3
+  # Image
+  image_picker: ^1.0.5
+  cached_network_image: ^3.3.0
+  photo_view: ^0.14.0
+  
+  # Audio
+  record: ^5.0.4
+  audioplayers: ^5.2.1
+  
+  # Screenshot for sharing
+  widgets_to_image: ^1.0.0
+  
+  # Rich text
+  flutter_quill: ^7.3.2
+  
+  # Markdown
+  flutter_markdown: ^0.6.18
+  
+  # Full screen
+  wakelock_plus: ^1.1.4
+
+dependency_overrides:
+  flutter_keyboard_visibility: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -70,7 +97,7 @@ dev_dependencies:
   flutter_lints: ^3.0.1
   hive_generator: ^2.0.1
   build_runner: ^2.4.7
-  analyzer: ^6.4.1
+  analyzer: ^6.4.1 # <-- THÊM DÒNG NÀY
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
