@@ -247,10 +247,13 @@ class _PresentationScreenState extends State<PresentationScreen>
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
-                                child: Image.file(
-                                  File(currentNode.imagePath!),
-                                  fit: BoxFit.cover,
-                                ),
+                                child: currentNode.imagePath != null
+                                    ? Image.file(
+                                        File(currentNode.imagePath!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Image.network(currentNode.imageUrl!,
+                                        fit: BoxFit.cover),
                               ),
                             ),
                           ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:viplens/models/mindmap_model.dart';
 
+import '../models/mindmap_model.dart';
 import '../models/node_model.dart';
 import '../providers/mindmap_provider.dart';
 import '../utils/colors.dart';
