@@ -3,6 +3,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/folder_model.dart'; // Thêm dòng này
 import '../models/mindmap_model.dart';
 import '../models/node_model.dart';
+import 'backup_codec.dart';
 
 class DatabaseService {
   static const String _mindmapBoxName = 'mindmaps';
@@ -164,37 +165,49 @@ class DatabaseService {
 
   // ==================== BACKUP/RESTORE ====================
 
-  /// Export tất cả data thành JSON
+  /// Export toàn bộ dữ liệu theo định dạng backup có version.
   static Map<String, dynamic> exportAllData() {
-    final mindmaps = getAllMindMaps();
-    return {
-      'version': '1.0.0',
-      'exportedAt': DateTime.now().toIso8601String(),
-      'mindmaps': mindmaps.map((m) => m.toJson()).toList(),
-      'settings': _settingsBox.toMap(),
-    };
+    return BackupCodec.encode(
+      mindmaps: getAllMindMaps(),
+      folders: getAllFolders(),
+      settings: Map<String, dynamic>.from(_settingsBox.toMap()),
+    );
   }
 
-  /// Import data từ JSON
+  /// Gộp backup đã được xác thực vào dữ liệu hiện có.
+  /// Tất cả payload được parse trước khi ghi; nếu ghi thất bại sẽ phục hồi
+  /// snapshot của cả ba Hive boxes để tránh trạng thái import dở dang.
   static Future<int> importData(Map<String, dynamic> data) async {
-    int importedCount = 0;
+    final backup = BackupCodec.decode(data);
+    final mindmapSnapshot = Map<dynamic, dynamic>.from(_mindmapBox.toMap());
+    final folderSnapshot = Map<dynamic, dynamic>.from(_folderBox.toMap());
+    final settingsSnapshot = Map<dynamic, dynamic>.from(_settingsBox.toMap());
 
-    if (data['mindmaps'] != null) {
-      final mindmaps = data['mindmaps'] as List;
-      for (final mapJson in mindmaps) {
-        try {
-          final mindmap = MindMapModel.fromJson(
-            mapJson as Map<String, dynamic>,
-          );
-          await saveMindMap(mindmap);
-          importedCount++;
-        } catch (e) {
-          print('Error importing mindmap: $e');
-        }
+    try {
+      for (final mindmap in backup.mindmaps) {
+        await saveMindMap(mindmap);
       }
+      for (final folder in backup.folders) {
+        await saveFolder(folder);
+      }
+      await _settingsBox.putAll(backup.settings);
+      return backup.mindmaps.length;
+    } catch (error) {
+      try {
+        await _mindmapBox.clear();
+        await _mindmapBox.putAll(mindmapSnapshot);
+        await _folderBox.clear();
+        await _folderBox.putAll(folderSnapshot);
+        await _settingsBox.clear();
+        await _settingsBox.putAll(settingsSnapshot);
+      } catch (rollbackError) {
+        throw StateError(
+          'Import thất bại ($error), đồng thời không thể phục hồi snapshot '
+          '($rollbackError).',
+        );
+      }
+      rethrow;
     }
-
-    return importedCount;
   }
 
   /// Xóa tất cả data
