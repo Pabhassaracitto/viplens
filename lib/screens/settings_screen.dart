@@ -227,7 +227,9 @@ class SettingsScreen extends StatelessWidget {
     final confirmed = await Helpers.showConfirmDialog(
       context,
       title: 'Khôi phục dữ liệu?',
-      message: 'Dữ liệu hiện tại sẽ được gộp với dữ liệu từ file backup.',
+      message: 'Dữ liệu trong backup sẽ được gộp với dữ liệu hiện tại. '
+          'Mindmap hoặc thư mục trùng ID và cài đặt trùng khóa sẽ được '
+          'thay thế; các mục khác được giữ nguyên.',
       confirmText: 'Tiếp tục',
     );
 

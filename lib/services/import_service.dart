@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import '../models/mindmap_model.dart';
 import 'database_service.dart';
@@ -27,15 +26,20 @@ class ImportService {
         type: FileType.custom,
         allowedExtensions: ['json', 'md', 'txt'],
         allowMultiple: false,
+        withData: true,
       );
 
       if (result == null || result.files.isEmpty) {
         return ImportResult(success: false, message: 'Không có file được chọn');
       }
 
-      final file = File(result.files.single.path!);
-      final content = await file.readAsString();
-      final extension = result.files.single.extension?.toLowerCase();
+      final selectedFile = result.files.single;
+      final bytes = selectedFile.bytes;
+      if (bytes == null) {
+        throw const FormatException('Không thể đọc nội dung file đã chọn.');
+      }
+      final content = utf8.decode(bytes);
+      final extension = selectedFile.extension?.toLowerCase();
 
       switch (extension) {
         case 'json':
