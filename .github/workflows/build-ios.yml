@@ -1,13 +1,10 @@
-name: Build iOS Release
+name: Build iOS Simulator
 
 on:
   push:
     tags:
       - 'v*.*.*'
       - 'v*'
-
-permissions:
-  contents: write
 
 jobs:
   build-ios:
@@ -26,19 +23,15 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Build IPA for iOS
+      - name: Build iOS Simulator app
         run: |
-          flutter build ios --release --no-codesign
-          cd build/ios/iphoneos
-          mkdir -p Payload
-          cp -r Runner.app Payload/
-          zip -r app-release.ipa Payload
+          flutter build ios --release --simulator
+          cd build/ios/iphonesimulator
+          zip -r app-release-simulator.zip Runner.app
 
-      - name: Upload IPA to Release
-        uses: softprops/action-gh-release@v1
+      - name: Upload iOS Simulator build artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: build/ios/iphoneos/app-release.ipa
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: viplens-ios-simulator-${{ github.ref_name }}
+          path: build/ios/iphonesimulator/app-release-simulator.zip
+          if-no-files-found: error
