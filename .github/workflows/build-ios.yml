@@ -25,13 +25,13 @@ jobs:
 
       - name: Build iOS Simulator app
         run: |
-          flutter build ios --release --simulator
+          flutter build ios --debug --simulator
           cd build/ios/iphonesimulator
-          zip -r app-release-simulator.zip Runner.app
+          zip -r app-debug-simulator.zip Runner.app
 
       - name: Upload iOS Simulator build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: viplens-ios-simulator-${{ github.ref_name }}
-          path: build/ios/iphonesimulator/app-release-simulator.zip
+          name: viplens-ios-simulator-debug-${{ github.ref_name }}
+          path: build/ios/iphonesimulator/app-debug-simulator.zip
           if-no-files-found: error

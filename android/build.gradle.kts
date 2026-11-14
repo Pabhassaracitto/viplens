@@ -1,4 +1,4 @@
-import com.android.build.api.dsl.LibraryExtension
+import com.android.build.gradle.BaseExtension
 
 allprojects {
     repositories {
@@ -18,11 +18,11 @@ subprojects {
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
 subprojects {
-    // Flutter plugins can pin an older compile SDK. Keep Android library
-    // plugins aligned with the app so their resources can resolve modern attrs.
-    plugins.withId("com.android.library") {
-        extensions.configure<LibraryExtension> {
-            compileSdk = 35
+    // Apply after each plugin's own build script, which may reset its compile SDK.
+    afterEvaluate {
+        val androidExtension = extensions.findByName("android")
+        if (androidExtension is BaseExtension) {
+            androidExtension.compileSdkVersion(35)
         }
     }
 }
