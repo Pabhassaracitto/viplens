@@ -179,8 +179,9 @@ class DatabaseService {
   /// snapshot của cả ba Hive boxes để tránh trạng thái import dở dang.
   static Future<int> importData(Map<String, dynamic> data) async {
     final backup = BackupCodec.decode(data);
-    final mindmapSnapshot = Map<dynamic, dynamic>.from(_mindmapBox.toMap());
-    final folderSnapshot = Map<dynamic, dynamic>.from(_folderBox.toMap());
+    final mindmapSnapshot =
+        Map<dynamic, MindMapModel>.from(_mindmapBox.toMap());
+    final folderSnapshot = Map<dynamic, FolderModel>.from(_folderBox.toMap());
     final settingsSnapshot = Map<dynamic, dynamic>.from(_settingsBox.toMap());
 
     try {
