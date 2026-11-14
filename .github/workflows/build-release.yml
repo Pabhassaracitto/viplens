@@ -39,6 +39,9 @@ jobs:
       - name: Build Web
         run: flutter build web --release
 
+      - name: Package Web build
+        run: cd build && zip -r web-release.zip web
+
       # iOS build disabled for now
       # - name: Build IPA (iOS)
       #   run: flutter build ios --release --no-codesign
@@ -49,7 +52,7 @@ jobs:
         with:
           files: |
             build/app/outputs/flutter-apk/app-release.apk
-            build/web/**/*
+            build/web-release.zip
           draft: false
           prerelease: false
           body: |
@@ -57,12 +60,12 @@ jobs:
             
             ### 📦 Build Artifacts
             - APK: app-release.apk
-            - Web: Included in build/web
+            - Web: Download and extract `web-release.zip`
             # - iOS: Build log available in workflow
             
             ### 📱 Installation
             - **Android**: Download and install the APK
-            - **Web**: Deploy files from build/web folder
+            - **Web**: Extract `web-release.zip` and deploy the `web/` directory
             - **iOS**: Use Xcode to build IPA or use the build folder
             
             Built on: ${{ runner.os }} by GitHub Actions
