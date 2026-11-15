@@ -269,6 +269,21 @@ class MindMapProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Cập nhật tiêu đề và cây mindmap từ outline trong editor.
+  Future<void> updateMindMapFromText(String newTitle, String text) async {
+    final current = _currentMindMap;
+    if (current == null) return;
+
+    _currentMindMap = TextParserService.updateMindMapFromText(
+      current,
+      text,
+      newTitle,
+    );
+    await DatabaseService.saveMindMap(_currentMindMap!);
+    await loadMindMaps();
+    notifyListeners();
+  }
+
   /// Cập nhật title mindmap
   Future<void> updateMindMapTitle(String newTitle) async {
     if (_currentMindMap == null) return;

@@ -297,9 +297,8 @@ class _EditorScreenState extends State<EditorScreen> {
       MindMapModel mindmap;
 
       if (_isEditing && _existingMindmap != null) {
-        // Update existing
-        await provider.updateMindMapTitle(title);
-        // TODO: Handle content update more gracefully
+        // Cập nhật cả tiêu đề lẫn outline, đồng thời giữ metadata node phù hợp.
+        await provider.updateMindMapFromText(title, content);
         mindmap = provider.currentMindMap!;
       } else {
         // Create new

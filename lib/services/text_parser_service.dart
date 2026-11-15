@@ -5,6 +5,141 @@ import '../models/mindmap_model.dart';
 class TextParserService {
   static const _uuid = Uuid();
 
+  /// Replace a mindmap's text-derived tree while retaining metadata for nodes
+  /// that remain at the same position in the hierarchy.
+  ///
+  /// Since the editor is a plain-text outline, sibling position is the stable
+  /// identity available for edited labels. Nodes removed from the outline are
+  /// removed; newly added nodes get fresh IDs and default review metadata.
+  static MindMapModel updateMindMapFromText(
+    MindMapModel existing,
+    String text,
+    String title,
+  ) {
+    final parsed = parseTextToMindMap(text, title);
+    final previousByParsedId = _matchExistingNodes(existing, parsed);
+    final idByParsedId = <String, String>{
+      for (final node in parsed.nodes)
+        node.id: previousByParsedId[node.id]?.id ?? node.id,
+    };
+    final now = DateTime.now();
+    final updatedNodes = parsed.nodes.map((parsedNode) {
+      final previous = previousByParsedId[parsedNode.id];
+      final parentId = parsedNode.parentId == null
+          ? null
+          : idByParsedId[parsedNode.parentId];
+      final childIds = parsedNode.childIds
+          .map((id) => idByParsedId[id]!)
+          .toList();
+
+      if (previous == null) {
+        return NodeModel(
+          id: idByParsedId[parsedNode.id]!,
+          content: parsedNode.content,
+          paliText: parsedNode.paliText,
+          parentId: parentId,
+          childIds: childIds,
+          level: parsedNode.level,
+          colorIndex: parsedNode.colorIndex,
+          createdAt: now,
+          updatedAt: now,
+        );
+      }
+
+      return NodeModel(
+        id: previous.id,
+        content: parsedNode.content,
+        paliText: parsedNode.paliText,
+        note: previous.note,
+        childIds: childIds,
+        parentId: parentId,
+        level: parsedNode.level,
+        colorIndex: previous.colorIndex,
+        isFlashcard: previous.isFlashcard,
+        nextReviewDate: previous.nextReviewDate,
+        repetitionCount: previous.repetitionCount,
+        easeFactor: previous.easeFactor,
+        intervalDays: previous.intervalDays,
+        positionX: previous.positionX,
+        positionY: previous.positionY,
+        imagePath: previous.imagePath,
+        audioPath: previous.audioPath,
+        audioDuration: previous.audioDuration,
+        imageUrl: previous.imageUrl,
+        link: previous.link,
+        createdAt: previous.createdAt,
+        updatedAt: now,
+        richNote: previous.richNote,
+      );
+    }).toList();
+
+    return existing.copyWith(
+      title: title,
+      rootNodeId: idByParsedId[parsed.rootNodeId]!,
+      nodes: updatedNodes,
+      updatedAt: now,
+    );
+  }
+
+  /// Match exact sibling labels first, then fall back to the same sibling
+  /// index for renamed labels only when the sibling count is unchanged. This
+  /// avoids assigning a deleted node's metadata to a newly inserted line.
+  static Map<String, NodeModel> _matchExistingNodes(
+    MindMapModel existing,
+    MindMapModel parsed,
+  ) {
+    final result = <String, NodeModel>{};
+    final oldRoot = existing.getNodeById(existing.rootNodeId);
+    final newRoot = parsed.getNodeById(parsed.rootNodeId);
+    if (oldRoot == null || newRoot == null) return result;
+    result[newRoot.id] = oldRoot;
+
+    void matchChildren(NodeModel oldParent, NodeModel newParent) {
+      final oldChildren = oldParent.childIds
+          .map(existing.getNodeById)
+          .whereType<NodeModel>()
+          .toList();
+      final newChildren = newParent.childIds
+          .map(parsed.getNodeById)
+          .whereType<NodeModel>()
+          .toList();
+      final matched = <int, NodeModel>{};
+      final usedOldIds = <String>{};
+
+      for (var newIndex = 0; newIndex < newChildren.length; newIndex++) {
+        final newChild = newChildren[newIndex];
+        for (final oldChild in oldChildren) {
+          if (!usedOldIds.contains(oldChild.id) &&
+              oldChild.content == newChild.content &&
+              oldChild.paliText == newChild.paliText) {
+            matched[newIndex] = oldChild;
+            usedOldIds.add(oldChild.id);
+            break;
+          }
+        }
+      }
+
+      if (oldChildren.length == newChildren.length) {
+        for (var newIndex = 0; newIndex < newChildren.length; newIndex++) {
+          if (matched.containsKey(newIndex)) continue;
+          final oldChild = oldChildren[newIndex];
+          if (usedOldIds.add(oldChild.id)) matched[newIndex] = oldChild;
+        }
+      }
+
+      for (var newIndex = 0; newIndex < newChildren.length; newIndex++) {
+        final oldChild = matched[newIndex];
+        if (oldChild == null) continue;
+        final newChild = newChildren[newIndex];
+        result[newChild.id] = oldChild;
+        matchChildren(oldChild, newChild);
+      }
+    }
+
+    matchChildren(oldRoot, newRoot);
+    return result;
+  }
+
   /// Parse text thành MindMap
   ///
   /// Hỗ trợ các định dạng:
