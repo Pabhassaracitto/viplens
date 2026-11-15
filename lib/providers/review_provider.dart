@@ -53,12 +53,15 @@ class ReviewProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> loadDueFlashcards() async {
+  Future<void> loadDueFlashcards({String? mindmapId}) async {
     _isLoading = true;
     _safeNotify();
 
     try {
-      _dueFlashcards = DatabaseService.getAllDueFlashcards();
+      final dueCards = DatabaseService.getAllDueFlashcards();
+      _dueFlashcards = mindmapId == null
+          ? dueCards
+          : dueCards.where((entry) => entry.key.id == mindmapId).toList();
       _currentIndex = 0;
       _reviewedCount = 0;
       _isShowingAnswer = false;

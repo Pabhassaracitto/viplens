@@ -8,6 +8,26 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static bool _initialized = false;
+  static VoidCallback? _reviewNavigationHandler;
+  static bool _pendingReviewNavigation = false;
+
+  /// Registers the app-level navigator callback and drains a cold-start tap.
+  static void setReviewNavigationHandler(VoidCallback? handler) {
+    _reviewNavigationHandler = handler;
+    if (handler != null && _pendingReviewNavigation) {
+      _pendingReviewNavigation = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) => handler());
+    }
+  }
+
+  static void _navigateToReview() {
+    final handler = _reviewNavigationHandler;
+    if (handler == null) {
+      _pendingReviewNavigation = true;
+    } else {
+      handler();
+    }
+  }
 
   /// Khởi tạo notification service
   static Future<void> initialize() async {
@@ -34,13 +54,27 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
+    final launchDetails =
+        await _notifications.getNotificationAppLaunchDetails();
+    if (launchDetails?.didNotificationLaunchApp ?? false) {
+      handleNotificationPayload(launchDetails?.notificationResponse?.payload);
+    }
+
     _initialized = true;
+  }
+
+  /// Dispatches notification actions; exposed for testing without platform plugins.
+  static void handleNotificationPayload(String? payload) {
+    if (payload == 'review') {
+      _navigateToReview();
+    } else {
+      debugPrint('Notification tapped without a review action: $payload');
+    }
   }
 
   /// Xử lý khi tap vào notification
   static void _onNotificationTap(NotificationResponse response) {
-    // TODO: Navigate to review screen
-    debugPrint('Notification tapped: ${response.payload}');
+    handleNotificationPayload(response.payload);
   }
 
   /// Yêu cầu quyền notification (Android 13+)

@@ -1,4 +1,4 @@
-name: Build Release
+name: Build Release (Android, Web, Windows, Linux)
 
 on:
   push:
@@ -10,9 +10,9 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  android-web:
+    name: Build Android and Web
     runs-on: ubuntu-latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -23,10 +23,10 @@ jobs:
           flutter-version: '3.24.0'
           cache: false
 
-      - name: Setup Java (for Android build)
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
           cache: gradle
 
@@ -39,35 +39,117 @@ jobs:
       - name: Build Web
         run: flutter build web --release
 
-      - name: Package Web build
-        run: cd build && zip -r web-release.zip web
+      - name: Package Android and Web builds
+        run: |
+          mkdir -p release-assets
+          cp build/app/outputs/flutter-apk/app-release.apk release-assets/
+          cd build
+          zip -r ../release-assets/web-release.zip web
 
-      # iOS build disabled for now
-      # - name: Build IPA (iOS)
-      #   run: flutter build ios --release --no-codesign
-      #   continue-on-error: true
+      - name: Upload Android and Web builds
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-android-web
+          path: release-assets/*
+          if-no-files-found: error
+
+  windows:
+    name: Build Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          cache: false
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Windows
+        run: flutter build windows --release
+
+      - name: Package Windows build
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release-assets | Out-Null
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath release-assets/viplens-windows-x64.zip -Force
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: release-assets/viplens-windows-x64.zip
+          if-no-files-found: error
+
+  linux:
+    name: Build Linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Linux desktop dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev libblkid-dev
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          cache: false
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build Linux
+        run: flutter build linux --release
+
+      - name: Package Linux build
+        run: |
+          mkdir -p release-assets
+          tar -czf release-assets/viplens-linux-x64.tar.gz -C build/linux/x64/release bundle
+
+      - name: Upload Linux build
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: release-assets/viplens-linux-x64.tar.gz
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish Release
+    runs-on: ubuntu-latest
+    needs: [android-web, windows, linux]
+    steps:
+      - name: Download platform builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: release-assets
+          merge-multiple: true
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: |
-            build/app/outputs/flutter-apk/app-release.apk
-            build/web-release.zip
+          files: release-assets/*
           draft: false
           prerelease: false
           body: |
             ## Release ${{ github.ref_name }}
-            
-            ### 📦 Build Artifacts
-            - APK: app-release.apk
-            - Web: Download and extract `web-release.zip`
-            # - iOS: Build log available in workflow
-            
-            ### 📱 Installation
-            - **Android**: Download and install the APK
-            - **Web**: Extract `web-release.zip` and deploy the `web/` directory
-            - **iOS**: Use Xcode to build IPA or use the build folder
-            
-            Built on: ${{ runner.os }} by GitHub Actions
+
+            ### Build artifacts
+            - Android: `app-release.apk`
+            - Web: extract `web-release.zip` and deploy its `web/` directory
+            - Windows x64: `viplens-windows-x64.zip`
+            - Linux x64: `viplens-linux-x64.tar.gz`
+            - iOS Simulator debug build: download the artifact from the corresponding Actions run
+
+            ### Notes
+            The iOS Simulator build is for Simulator testing only, not direct installation on a physical device.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

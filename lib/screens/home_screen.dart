@@ -519,14 +519,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _reviewMindMap(String id) {
-    // TODO: Review specific mindmap
-    _startReview();
+    _openReview(mindmapId: id);
   }
 
   void _startReview() {
+    _openReview();
+  }
+
+  void _openReview({String? mindmapId}) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const ReviewScreen()),
+      MaterialPageRoute(
+        builder: (context) => ReviewScreen(mindmapId: mindmapId),
+      ),
     );
   }
 

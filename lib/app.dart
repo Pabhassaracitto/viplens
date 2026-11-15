@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'themes/app_theme.dart';
 import 'screens/home_screen.dart';
+import 'screens/review_screen.dart';
 import 'providers/settings_provider.dart';
+import 'services/notification_service.dart';
+
+final GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
 
 class DhammaMindApp extends StatefulWidget {
   const DhammaMindApp({super.key});
@@ -16,9 +20,26 @@ class _DhammaMindAppState extends State<DhammaMindApp> {
   @override
   void initState() {
     super.initState();
+    NotificationService.setReviewNavigationHandler(_openReviewFromNotification);
     // Load settings khi app khởi động
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SettingsProvider>().loadSettings();
+    });
+  }
+
+  @override
+  void dispose() {
+    NotificationService.setReviewNavigationHandler(null);
+    super.dispose();
+  }
+
+  void _openReviewFromNotification() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final navigator = appNavigatorKey.currentState;
+      if (navigator == null) return;
+      navigator.push(
+        MaterialPageRoute(builder: (_) => const ReviewScreen()),
+      );
     });
   }
 
@@ -29,6 +50,7 @@ class _DhammaMindAppState extends State<DhammaMindApp> {
         final isDarkMode = settingsProvider.settings.isDarkMode;
 
         return MaterialApp(
+          navigatorKey: appNavigatorKey,
           title: 'Dhamma Mind',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.lightTheme,

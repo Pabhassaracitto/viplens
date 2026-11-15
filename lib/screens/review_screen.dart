@@ -6,7 +6,9 @@ import '../utils/colors.dart';
 import '../widgets/flashcard_widget.dart';
 
 class ReviewScreen extends StatefulWidget {
-  const ReviewScreen({super.key});
+  final String? mindmapId;
+
+  const ReviewScreen({super.key, this.mindmapId});
 
   @override
   State<ReviewScreen> createState() => _ReviewScreenState();
@@ -18,7 +20,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        context.read<ReviewProvider>().loadDueFlashcards();
+        context.read<ReviewProvider>().loadDueFlashcards(
+              mindmapId: widget.mindmapId,
+            );
       }
     });
   }

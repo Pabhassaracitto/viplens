@@ -6,6 +6,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:viplens/models/folder_model.dart';
 import 'package:viplens/models/mindmap_model.dart';
 import 'package:viplens/models/node_model.dart';
+import 'package:viplens/providers/review_provider.dart';
 import 'package:viplens/services/backup_codec.dart';
 import 'package:viplens/services/database_service.dart';
 
@@ -68,6 +69,29 @@ void main() {
     expect(DatabaseService.getSetting<Map>('appSettings')?['isDarkMode'], isTrue);
   });
 
+  test('filters a review session to the selected mindmap', () async {
+    await DatabaseService.saveMindMap(_mindmapWithDueCard('map-a'));
+    await DatabaseService.saveMindMap(_mindmapWithDueCard('map-b'));
+
+    final provider = ReviewProvider();
+    await provider.loadDueFlashcards(mindmapId: 'map-b');
+
+    expect(provider.totalCount, 1);
+    expect(provider.currentMindMap?.id, 'map-b');
+    provider.dispose();
+  });
+
+  test('selected mindmap with no due cards has an empty review session', () async {
+    await DatabaseService.saveMindMap(_mindmap('map-no-cards', 'No cards'));
+
+    final provider = ReviewProvider();
+    await provider.loadDueFlashcards(mindmapId: 'map-no-cards');
+
+    expect(provider.hasCards, isFalse);
+    expect(provider.totalCount, 0);
+    provider.dispose();
+  });
+
   test('rejects an unsupported backup without changing saved data', () async {
     await DatabaseService.saveMindMap(_mindmap('local-map', 'Giữ nguyên'));
 
@@ -85,6 +109,31 @@ void main() {
     expect(DatabaseService.getAllMindMaps(), hasLength(1));
     expect(DatabaseService.getMindMapById('local-map')?.title, 'Giữ nguyên');
   });
+}
+
+MindMapModel _mindmapWithDueCard(String id) {
+  final now = DateTime.now();
+  final root = NodeModel(
+    id: '$id-root',
+    content: id,
+    childIds: ['$id-card'],
+  );
+  final card = NodeModel(
+    id: '$id-card',
+    content: 'Due card for $id',
+    parentId: root.id,
+    level: 1,
+    isFlashcard: true,
+    nextReviewDate: now.subtract(const Duration(days: 1)),
+  );
+  return MindMapModel(
+    id: id,
+    title: id,
+    rootNodeId: root.id,
+    nodes: [root, card],
+    createdAt: now,
+    updatedAt: now,
+  );
 }
 
 MindMapModel _mindmap(String id, String title) {
