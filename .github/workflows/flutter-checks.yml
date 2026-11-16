@@ -27,6 +27,15 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        test_file:
+          - test/backup_codec_test.dart
+          - test/database_service_test.dart
+          - test/text_parser_service_test.dart
+          - test/notification_navigation_test.dart
+    name: Test ${{ matrix.test_file }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -40,5 +49,5 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Test
-        run: flutter test --reporter=github
+      - name: Run test file
+        run: flutter test ${{ matrix.test_file }} --reporter=expanded
